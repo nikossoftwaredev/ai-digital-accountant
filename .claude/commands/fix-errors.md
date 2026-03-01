@@ -1,0 +1,1 @@
+Run pnpm lint and pnpm tsc in parallel, fix the errors not the warnings. Keep running them until no more errors

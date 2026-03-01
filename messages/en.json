@@ -1,0 +1,35 @@
+{
+  "HomePage": {
+    "title": "Welcome",
+    "description": "Get started by editing this page.",
+    "components": {
+      "title": "Available Components",
+      "button": "Button",
+      "input": "Input",
+      "card": "Card",
+      "label": "Label"
+    }
+  },
+  "Admin": {
+    "nav": {
+      "management": "Management",
+      "system": "System",
+      "finance": "Finance",
+      "users": "Users",
+      "settings": "Settings",
+      "expenses": "Expenses"
+    },
+    "users": {
+      "title": "Users",
+      "description": "Manage your team members and their permissions."
+    },
+    "settings": {
+      "title": "Settings",
+      "description": "Manage your application preferences and configuration."
+    },
+    "expenses": {
+      "title": "Expenses",
+      "description": "Track and manage your organization's expenses."
+    }
+  }
+}
