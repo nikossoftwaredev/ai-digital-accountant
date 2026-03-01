@@ -1,15 +1,4 @@
 {
-  "HomePage": {
-    "title": "Καλώς ήρθατε",
-    "description": "Ξεκινήστε επεξεργάζοντας αυτή τη σελίδα.",
-    "components": {
-      "title": "Διαθέσιμα Components",
-      "button": "Κουμπί",
-      "input": "Πεδίο εισαγωγής",
-      "card": "Κάρτα",
-      "label": "Ετικέτα"
-    }
-  },
   "Admin": {
     "nav": {
       "management": "Διαχείριση",

@@ -6,7 +6,7 @@ import { BasePageProps } from "@/types/page-props";
 const AdminPage = async ({ params }: BasePageProps) => {
   const { locale } = await params;
   setRequestLocale(locale);
-  redirect({ href: "/admin/users", locale });
+  redirect({ href: "/admin/dashboard", locale });
 };
 
 export default AdminPage;

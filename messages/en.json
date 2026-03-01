@@ -1,15 +1,4 @@
 {
-  "HomePage": {
-    "title": "Welcome",
-    "description": "Get started by editing this page.",
-    "components": {
-      "title": "Available Components",
-      "button": "Button",
-      "input": "Input",
-      "card": "Card",
-      "label": "Label"
-    }
-  },
   "Admin": {
     "nav": {
       "management": "Management",
