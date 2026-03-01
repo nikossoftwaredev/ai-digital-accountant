@@ -185,6 +185,7 @@
     "totpCode": "2FA Code",
     "totpError": "Invalid verification code",
     "rateLimited": "Too many failed attempts. Please try again later.",
-    "sessionExpired": "Your session has expired. Please sign in again."
+    "sessionExpired": "Your session has expired. Please sign in again.",
+    "confirm": "Confirm"
   }
 }
