@@ -1,6 +1,6 @@
 import NextAuth from "next-auth";
 import type { NextAuthOptions } from "next-auth";
-import { prisma } from "@/lib/db";
+import { prisma } from "@repo/shared";
 
 export const authOptions: NextAuthOptions = {
   // TODO: Replace with CredentialsProvider for email+password auth
