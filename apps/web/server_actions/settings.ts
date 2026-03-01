@@ -257,6 +257,12 @@ export const setupTotp = async (): Promise<{ success: boolean; uri?: string; err
     data: { totpSecret: JSON.stringify(encrypted) },
   });
 
+  await logAuditEvent({
+    accountantId,
+    action: "SETTINGS_CHANGED",
+    details: { field: "totp_setup_initiated" },
+  });
+
   return { success: true, uri };
 };
 

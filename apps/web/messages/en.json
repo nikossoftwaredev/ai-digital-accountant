@@ -157,6 +157,12 @@
       "twoFactorDesc": "Scan the QR code with your authenticator app",
       "enable2FA": "Enable 2FA",
       "disable2FA": "Disable 2FA",
+      "twoFactorEnabled": "2FA Enabled",
+      "twoFactorDisabled": "2FA Disabled",
+      "totpCodePrompt": "Enter the 6-digit code from your authenticator app",
+      "backupCodesWarning": "Save these backup codes — they will not be shown again",
+      "copyCodes": "Copy codes",
+      "copied": "Copied",
       "save": "Save",
       "saved": "Saved"
     },

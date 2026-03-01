@@ -74,6 +74,7 @@ interface ProfileSettingsFormProps {
 
 export const ProfileSettingsForm = ({ settings }: ProfileSettingsFormProps) => {
   const t = useTranslations("Admin.settings");
+  const tc = useTranslations("Admin.common");
   const router = useRouter();
 
   // 2FA state
@@ -185,7 +186,7 @@ export const ProfileSettingsForm = ({ settings }: ProfileSettingsFormProps) => {
   const handleCopyBackupCodes = useCallback(() => {
     if (backupCodes) {
       navigator.clipboard.writeText(backupCodes.join("\n"));
-      toast.success("Copied");
+      toast.success(t("copied"));
     }
   }, [backupCodes]);
 
@@ -352,14 +353,14 @@ export const ProfileSettingsForm = ({ settings }: ProfileSettingsFormProps) => {
               <>
                 <ShieldCheck className="size-5 text-green-600" />
                 <span className="text-sm font-medium text-green-600">
-                  2FA Enabled
+                  {t("twoFactorEnabled")}
                 </span>
               </>
             ) : (
               <>
                 <ShieldOff className="size-5 text-muted-foreground" />
                 <span className="text-sm text-muted-foreground">
-                  2FA Disabled
+                  {t("twoFactorDisabled")}
                 </span>
               </>
             )}
@@ -402,7 +403,7 @@ export const ProfileSettingsForm = ({ settings }: ProfileSettingsFormProps) => {
 
               <div className="space-y-2">
                 <label className="text-sm font-medium">
-                  Enter the 6-digit code from your authenticator app
+                  {t("totpCodePrompt")}
                 </label>
                 <div className="flex gap-2">
                   <Input
@@ -429,7 +430,7 @@ export const ProfileSettingsForm = ({ settings }: ProfileSettingsFormProps) => {
               <div className="flex items-center gap-2 text-amber-800 dark:text-amber-200">
                 <AlertTriangle className="size-4" />
                 <span className="text-sm font-medium">
-                  Save these backup codes - they will not be shown again
+                  {t("backupCodesWarning")}
                 </span>
               </div>
               <div className="grid grid-cols-2 gap-2 font-mono text-sm">
@@ -448,7 +449,7 @@ export const ProfileSettingsForm = ({ settings }: ProfileSettingsFormProps) => {
                 onClick={handleCopyBackupCodes}
               >
                 <Copy className="size-4" />
-                Copy codes
+                {t("copyCodes")}
               </Button>
             </div>
           )}
@@ -485,7 +486,7 @@ export const ProfileSettingsForm = ({ settings }: ProfileSettingsFormProps) => {
                 setDisableError(null);
               }}
             >
-              Cancel
+              {tc("cancel")}
             </Button>
             <Button
               variant="destructive"

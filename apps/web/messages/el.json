@@ -156,6 +156,12 @@
       "twoFactorDesc": "Σαρώστε τον QR κωδικό με την εφαρμογή authenticator",
       "enable2FA": "Ενεργοποίηση 2FA",
       "disable2FA": "Απενεργοποίηση 2FA",
+      "twoFactorEnabled": "2FA Ενεργοποιημένο",
+      "twoFactorDisabled": "2FA Απενεργοποιημένο",
+      "totpCodePrompt": "Εισάγετε τον 6-ψήφιο κωδικό από την εφαρμογή authenticator",
+      "backupCodesWarning": "Αποθηκεύστε αυτούς τους εφεδρικούς κωδικούς — δεν θα εμφανιστούν ξανά",
+      "copyCodes": "Αντιγραφή κωδικών",
+      "copied": "Αντιγράφηκε",
       "save": "Αποθήκευση",
       "saved": "Αποθηκεύτηκε"
     },
