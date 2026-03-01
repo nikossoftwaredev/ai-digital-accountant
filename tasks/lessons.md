@@ -60,6 +60,14 @@ Rules, style preferences, and best practices. Review at session start.
 - **Don't over-optimize** - Only memoize when there's an actual performance concern.
 - **Prefer derived state over useEffect** for computed values.
 
+### Loading States
+- **NEVER use "..." dots** for loading states in buttons. Always use the reusable `<Spinner />` component from `@/components/ui/spinner`.
+- Pattern: `{isSubmitting ? <Spinner /> : t("save")}`
+
+### Form Labels
+- **Add Lucide icons to form labels** where applicable. Use `inline size-3.5` class on the icon.
+- Pattern: `<FormLabel><User className="inline size-3.5" /> {t("name")}</FormLabel>`
+
 ## UI / Styling
 
 ### Button Component
@@ -104,6 +112,7 @@ Always use typography components from `@/components/ui/typography.tsx`:
 
 ## Workflow
 
+- **Lessons go in `tasks/lessons.md`** - NEVER use the auto memory system for coding rules or user preferences. After ANY correction from the user, immediately update THIS file. Read this file at session start.
 - **Error Checking Protocol** - After completing work on any file: (1) Run `pnpm tsc --noEmit`, (2) Run `pnpm lint`, (3) Fix ALL errors before moving on.
 - **Code Review Mindset** - Question if implementation is correct. Push back on incorrect requirements. Prefer native solutions over reinventing the wheel. Check for latest best practices.
 

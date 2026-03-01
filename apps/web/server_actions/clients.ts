@@ -12,6 +12,7 @@ import { getAccountantId } from "@/lib/auth/session";
 const clientCreateSchema = z.object({
   name: z.string().min(1),
   afm: z.string().regex(/^\d{9}$/),
+  amka: z.string().regex(/^\d{11}$/).optional().or(z.literal("")),
   email: z.string().email().optional().or(z.literal("")),
   phone: z.string().optional().or(z.literal("")),
   taxisnetUsername: z.string().min(1),
@@ -22,6 +23,7 @@ const clientCreateSchema = z.object({
 const clientUpdateSchema = z.object({
   name: z.string().min(1),
   afm: z.string().regex(/^\d{9}$/),
+  amka: z.string().regex(/^\d{11}$/).optional().or(z.literal("")),
   email: z.string().email().optional().or(z.literal("")),
   phone: z.string().optional().or(z.literal("")),
   taxisnetUsername: z.string().optional().or(z.literal("")),
@@ -35,6 +37,7 @@ export type ClientRow = {
   id: string;
   name: string;
   afm: string;
+  amka: string | null;
   email: string | null;
   phone: string | null;
   notes: string | null;
@@ -57,6 +60,7 @@ export const getClients = async (): Promise<ClientRow[]> => {
       id: true,
       name: true,
       afm: true,
+      amka: true,
       email: true,
       phone: true,
       notes: true,
@@ -72,6 +76,7 @@ export const getClients = async (): Promise<ClientRow[]> => {
     id: c.id,
     name: c.name,
     afm: c.afm,
+    amka: c.amka,
     email: c.email,
     phone: c.phone,
     notes: c.notes,
@@ -95,7 +100,7 @@ export const createClient = async (
     return { success: false, error: "Validation failed" };
   }
 
-  const { name, afm, email, phone, taxisnetUsername, taxisnetPassword, notes } =
+  const { name, afm, amka, email, phone, taxisnetUsername, taxisnetPassword, notes } =
     parsed.data;
 
   // Check for duplicate AFM
@@ -115,6 +120,7 @@ export const createClient = async (
       accountantId,
       name,
       afm,
+      amka: amka || null,
       email: email || null,
       phone: phone || null,
       notes: notes || null,
@@ -155,7 +161,7 @@ export const updateClient = async (
     return { success: false, error: "Client not found" };
   }
 
-  const { name, afm, email, phone, taxisnetUsername, taxisnetPassword, notes } =
+  const { name, afm, amka, email, phone, taxisnetUsername, taxisnetPassword, notes } =
     parsed.data;
 
   // Check for duplicate AFM (if changed)
@@ -171,6 +177,7 @@ export const updateClient = async (
   const updateData: Record<string, unknown> = {
     name,
     afm,
+    amka: amka || null,
     email: email || null,
     phone: phone || null,
     notes: notes || null,

@@ -1,12 +1,14 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
+import { KeyRound, Mail, Network, Server } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
 
 import { Button } from "@/components/ui/button";
+import { Spinner } from "@/components/ui/spinner";
 import {
   Card,
   CardContent,
@@ -95,7 +97,7 @@ export const SmtpSettingsForm = ({ settings }: SmtpSettingsFormProps) => {
                 name="smtpHost"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>{t("smtpHost")}</FormLabel>
+                    <FormLabel><Server className="inline size-3.5" /> {t("smtpHost")}</FormLabel>
                     <FormControl>
                       <Input placeholder="smtp.example.com" {...field} />
                     </FormControl>
@@ -109,7 +111,7 @@ export const SmtpSettingsForm = ({ settings }: SmtpSettingsFormProps) => {
                 name="smtpPort"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>{t("smtpPort")}</FormLabel>
+                    <FormLabel><Network className="inline size-3.5" /> {t("smtpPort")}</FormLabel>
                     <FormControl>
                       <Input
                         type="number"
@@ -128,7 +130,7 @@ export const SmtpSettingsForm = ({ settings }: SmtpSettingsFormProps) => {
               name="smtpUsername"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>{t("smtpUsername")}</FormLabel>
+                  <FormLabel><Mail className="inline size-3.5" /> {t("smtpUsername")}</FormLabel>
                   <FormControl>
                     <Input {...field} />
                   </FormControl>
@@ -142,7 +144,7 @@ export const SmtpSettingsForm = ({ settings }: SmtpSettingsFormProps) => {
               name="smtpPassword"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>{t("smtpPassword")}</FormLabel>
+                  <FormLabel><KeyRound className="inline size-3.5" /> {t("smtpPassword")}</FormLabel>
                   <FormControl>
                     <Input type="password" {...field} />
                   </FormControl>
@@ -154,7 +156,7 @@ export const SmtpSettingsForm = ({ settings }: SmtpSettingsFormProps) => {
 
             <div className="flex gap-3">
               <Button type="submit" disabled={form.formState.isSubmitting}>
-                {form.formState.isSubmitting ? "..." : t("save")}
+                {form.formState.isSubmitting ? <Spinner /> : t("save")}
               </Button>
               <Button type="button" variant="outline" disabled>
                 {t("testConnection")}

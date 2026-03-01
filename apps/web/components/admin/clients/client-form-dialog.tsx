@@ -1,12 +1,14 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
+import { FileText, Hash, IdCard, KeyRound, Mail, MessageSquare, Phone, User } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 
 import { Button } from "@/components/ui/button";
+import { Spinner } from "@/components/ui/spinner";
 import {
   Dialog,
   DialogContent,
@@ -33,6 +35,7 @@ import { createClient, updateClient } from "@/server_actions/clients";
 const clientFormSchema = z.object({
   name: z.string().min(1),
   afm: z.string().regex(/^\d{9}$/),
+  amka: z.string().regex(/^\d{11}$/).optional().or(z.literal("")),
   email: z.string().email().optional().or(z.literal("")),
   phone: z.string().optional().or(z.literal("")),
   taxisnetUsername: z.string().optional().or(z.literal("")),
@@ -68,6 +71,7 @@ export const ClientFormDialog = ({
     defaultValues: {
       name: "",
       afm: "",
+      amka: "",
       email: "",
       phone: "",
       taxisnetUsername: "",
@@ -83,6 +87,7 @@ export const ClientFormDialog = ({
         form.reset({
           name: client.name,
           afm: client.afm,
+          amka: client.amka ?? "",
           email: client.email ?? "",
           phone: client.phone ?? "",
           taxisnetUsername: "",
@@ -93,6 +98,7 @@ export const ClientFormDialog = ({
         form.reset({
           name: "",
           afm: "",
+          amka: "",
           email: "",
           phone: "",
           taxisnetUsername: "",
@@ -160,7 +166,7 @@ export const ClientFormDialog = ({
               name="name"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>{t("name")}</FormLabel>
+                  <FormLabel><User className="inline size-3.5" /> {t("name")}</FormLabel>
                   <FormControl>
                     <Input {...field} />
                   </FormControl>
@@ -174,11 +180,26 @@ export const ClientFormDialog = ({
               name="afm"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>{t("afm")}</FormLabel>
+                  <FormLabel><Hash className="inline size-3.5" /> {t("afm")}</FormLabel>
                   <FormControl>
                     <Input {...field} maxLength={9} />
                   </FormControl>
                   <FormDescription>{t("afmValidation")}</FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="amka"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel><IdCard className="inline size-3.5" /> {t("amka")}</FormLabel>
+                  <FormControl>
+                    <Input {...field} maxLength={11} />
+                  </FormControl>
+                  <FormDescription>{t("amkaValidation")}</FormDescription>
                   <FormMessage />
                 </FormItem>
               )}
@@ -190,7 +211,7 @@ export const ClientFormDialog = ({
                 name="email"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>{t("email")}</FormLabel>
+                    <FormLabel><Mail className="inline size-3.5" /> {t("email")}</FormLabel>
                     <FormControl>
                       <Input type="email" {...field} />
                     </FormControl>
@@ -204,7 +225,7 @@ export const ClientFormDialog = ({
                 name="phone"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>{t("phone")}</FormLabel>
+                    <FormLabel><Phone className="inline size-3.5" /> {t("phone")}</FormLabel>
                     <FormControl>
                       <Input {...field} />
                     </FormControl>
@@ -219,7 +240,7 @@ export const ClientFormDialog = ({
               name="taxisnetUsername"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>{t("taxisnetUsername")}</FormLabel>
+                  <FormLabel><FileText className="inline size-3.5" /> {t("taxisnetUsername")}</FormLabel>
                   <FormControl>
                     <Input {...field} />
                   </FormControl>
@@ -238,7 +259,7 @@ export const ClientFormDialog = ({
               name="taxisnetPassword"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>{t("taxisnetPassword")}</FormLabel>
+                  <FormLabel><KeyRound className="inline size-3.5" /> {t("taxisnetPassword")}</FormLabel>
                   <FormControl>
                     <Input type="password" {...field} />
                   </FormControl>
@@ -257,7 +278,7 @@ export const ClientFormDialog = ({
               name="notes"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>{t("notes")}</FormLabel>
+                  <FormLabel><MessageSquare className="inline size-3.5" /> {t("notes")}</FormLabel>
                   <FormControl>
                     <Textarea rows={3} {...field} />
                   </FormControl>
@@ -275,7 +296,7 @@ export const ClientFormDialog = ({
                 {t("cancel")}
               </Button>
               <Button type="submit" disabled={form.formState.isSubmitting}>
-                {form.formState.isSubmitting ? "..." : t("save")}
+                {form.formState.isSubmitting ? <Spinner /> : t("save")}
               </Button>
             </DialogFooter>
           </form>

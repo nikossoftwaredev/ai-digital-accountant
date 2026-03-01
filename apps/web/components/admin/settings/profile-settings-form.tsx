@@ -1,7 +1,7 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { AlertTriangle, Copy, Shield, ShieldCheck, ShieldOff } from "lucide-react";
+import { AlertTriangle, Building2, Copy, KeyRound, Lock, MapPin, Phone, Shield, ShieldCheck, ShieldOff } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useCallback, useState } from "react";
 import { useForm } from "react-hook-form";
@@ -9,6 +9,7 @@ import { toast } from "sonner";
 import { z } from "zod";
 
 import { Button } from "@/components/ui/button";
+import { Spinner } from "@/components/ui/spinner";
 import {
   Card,
   CardContent,
@@ -219,7 +220,7 @@ export const ProfileSettingsForm = ({ settings }: ProfileSettingsFormProps) => {
                 name="officeName"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>{t("officeName")}</FormLabel>
+                    <FormLabel><Building2 className="inline size-3.5" /> {t("officeName")}</FormLabel>
                     <FormControl>
                       <Input {...field} />
                     </FormControl>
@@ -233,7 +234,7 @@ export const ProfileSettingsForm = ({ settings }: ProfileSettingsFormProps) => {
                 name="officeAddress"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>{t("officeAddress")}</FormLabel>
+                    <FormLabel><MapPin className="inline size-3.5" /> {t("officeAddress")}</FormLabel>
                     <FormControl>
                       <Input {...field} />
                     </FormControl>
@@ -247,7 +248,7 @@ export const ProfileSettingsForm = ({ settings }: ProfileSettingsFormProps) => {
                 name="officePhone"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>{t("officePhone")}</FormLabel>
+                    <FormLabel><Phone className="inline size-3.5" /> {t("officePhone")}</FormLabel>
                     <FormControl>
                       <Input {...field} />
                     </FormControl>
@@ -260,7 +261,7 @@ export const ProfileSettingsForm = ({ settings }: ProfileSettingsFormProps) => {
                 type="submit"
                 disabled={profileForm.formState.isSubmitting}
               >
-                {profileForm.formState.isSubmitting ? "..." : t("save")}
+                {profileForm.formState.isSubmitting ? <Spinner /> : t("save")}
               </Button>
             </form>
           </Form>
@@ -289,7 +290,7 @@ export const ProfileSettingsForm = ({ settings }: ProfileSettingsFormProps) => {
                 name="currentPassword"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>{t("currentPassword")}</FormLabel>
+                    <FormLabel><Lock className="inline size-3.5" /> {t("currentPassword")}</FormLabel>
                     <FormControl>
                       <Input type="password" {...field} />
                     </FormControl>
@@ -303,7 +304,7 @@ export const ProfileSettingsForm = ({ settings }: ProfileSettingsFormProps) => {
                 name="newPassword"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>{t("newPassword")}</FormLabel>
+                    <FormLabel><KeyRound className="inline size-3.5" /> {t("newPassword")}</FormLabel>
                     <FormControl>
                       <Input type="password" {...field} />
                     </FormControl>
@@ -317,7 +318,7 @@ export const ProfileSettingsForm = ({ settings }: ProfileSettingsFormProps) => {
                 name="confirmPassword"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>{t("confirmPassword")}</FormLabel>
+                    <FormLabel><KeyRound className="inline size-3.5" /> {t("confirmPassword")}</FormLabel>
                     <FormControl>
                       <Input type="password" {...field} />
                     </FormControl>
@@ -330,7 +331,7 @@ export const ProfileSettingsForm = ({ settings }: ProfileSettingsFormProps) => {
                 type="submit"
                 disabled={passwordForm.formState.isSubmitting}
               >
-                {passwordForm.formState.isSubmitting ? "..." : t("save")}
+                {passwordForm.formState.isSubmitting ? <Spinner /> : t("save")}
               </Button>
             </form>
           </Form>
@@ -378,7 +379,7 @@ export const ProfileSettingsForm = ({ settings }: ProfileSettingsFormProps) => {
                 </Button>
               ) : (
                 <Button onClick={handleEnable2FA} disabled={totpLoading}>
-                  {totpLoading ? "..." : t("enable2FA")}
+                  {totpLoading ? <Spinner /> : t("enable2FA")}
                 </Button>
               )}
             </>
@@ -417,7 +418,7 @@ export const ProfileSettingsForm = ({ settings }: ProfileSettingsFormProps) => {
                     onClick={handleConfirmTotp}
                     disabled={totpLoading || totpCode.length !== 6}
                   >
-                    {totpLoading ? "..." : t("save")}
+                    {totpLoading ? <Spinner /> : t("save")}
                   </Button>
                 </div>
               </div>
@@ -493,7 +494,7 @@ export const ProfileSettingsForm = ({ settings }: ProfileSettingsFormProps) => {
               onClick={handleDisable2FA}
               disabled={disableLoading || !disablePassword}
             >
-              {disableLoading ? "..." : t("disable2FA")}
+              {disableLoading ? <Spinner /> : t("disable2FA")}
             </Button>
           </DialogFooter>
         </DialogContent>

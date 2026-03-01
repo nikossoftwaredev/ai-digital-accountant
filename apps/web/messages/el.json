@@ -39,6 +39,8 @@
       "editClient": "Επεξεργασία Πελάτη",
       "name": "Ονοματεπώνυμο / Επωνυμία",
       "afm": "ΑΦΜ",
+      "amka": "ΑΜΚΑ",
+      "amkaValidation": "Το ΑΜΚΑ πρέπει να αποτελείται από 11 ψηφία",
       "email": "Email",
       "phone": "Τηλέφωνο",
       "taxisnetUsername": "Χρήστης TaxisNet",

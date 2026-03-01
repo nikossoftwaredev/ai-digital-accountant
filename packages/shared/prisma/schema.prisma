@@ -71,6 +71,7 @@ model Client {
 
   name  String
   afm   String    // Greek Tax ID (9 digits)
+  amka  String?   // Greek Social Security Number (11 digits)
   email String?
   phone String?
   notes String?

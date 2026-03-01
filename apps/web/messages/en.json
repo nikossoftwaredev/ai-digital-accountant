@@ -39,6 +39,8 @@
       "editClient": "Edit Client",
       "name": "Full Name / Company",
       "afm": "Tax ID (AFM)",
+      "amka": "AMKA",
+      "amkaValidation": "AMKA must be exactly 11 digits",
       "email": "Email",
       "phone": "Phone",
       "taxisnetUsername": "TaxisNet Username",

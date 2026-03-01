@@ -1,12 +1,14 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
+import { Bell, Clock } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
 
 import { Button } from "@/components/ui/button";
+import { Spinner } from "@/components/ui/spinner";
 import {
   Card,
   CardContent,
@@ -90,7 +92,7 @@ export const ScanSettingsForm = ({ settings }: ScanSettingsFormProps) => {
               name="scanFrequency"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>{t("scanFrequency")}</FormLabel>
+                  <FormLabel><Clock className="inline size-3.5" /> {t("scanFrequency")}</FormLabel>
                   <Select
                     onValueChange={field.onChange}
                     defaultValue={field.value}
@@ -116,7 +118,7 @@ export const ScanSettingsForm = ({ settings }: ScanSettingsFormProps) => {
               render={({ field }) => (
                 <FormItem className="flex items-center justify-between rounded-lg border p-4">
                   <div className="space-y-0.5">
-                    <FormLabel>{t("autoNotify")}</FormLabel>
+                    <FormLabel><Bell className="inline size-3.5" /> {t("autoNotify")}</FormLabel>
                     <FormDescription>{t("autoNotifyDesc")}</FormDescription>
                   </div>
                   <FormControl>
@@ -130,7 +132,7 @@ export const ScanSettingsForm = ({ settings }: ScanSettingsFormProps) => {
             />
 
             <Button type="submit" disabled={form.formState.isSubmitting}>
-              {form.formState.isSubmitting ? "..." : t("save")}
+              {form.formState.isSubmitting ? <Spinner /> : t("save")}
             </Button>
           </form>
         </Form>
