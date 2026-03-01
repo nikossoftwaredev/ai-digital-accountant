@@ -24,7 +24,13 @@
       "bulkScan": "Bulk Scan",
       "sendEmails": "Send Emails",
       "noDebts": "No debts found",
-      "viewAll": "View all"
+      "viewAll": "View all",
+      "client": "Client",
+      "category": "Category",
+      "platform": "Platform",
+      "amount": "Amount",
+      "date": "Date",
+      "neverScanned": "—"
     },
     "clients": {
       "title": "Clients",

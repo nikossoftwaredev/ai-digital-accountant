@@ -24,7 +24,13 @@
       "bulkScan": "Μαζική Σάρωση",
       "sendEmails": "Αποστολή Emails",
       "noDebts": "Δεν υπάρχουν οφειλές",
-      "viewAll": "Προβολή όλων"
+      "viewAll": "Προβολή όλων",
+      "client": "Πελάτης",
+      "category": "Κατηγορία",
+      "platform": "Πλατφόρμα",
+      "amount": "Ποσό",
+      "date": "Ημερομηνία",
+      "neverScanned": "—"
     },
     "clients": {
       "title": "Πελάτες",
