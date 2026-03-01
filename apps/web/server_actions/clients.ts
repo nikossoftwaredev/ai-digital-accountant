@@ -1,0 +1,248 @@
+"use server";
+
+import { encrypt, prisma } from "@repo/shared";
+import { getServerSession } from "next-auth";
+import { z } from "zod";
+
+import { logAuditEvent } from "@/lib/auth/audit";
+import { authOptions } from "@/lib/auth/auth";
+
+// ── Schemas ──────────────────────────────────────────────────────
+
+const clientCreateSchema = z.object({
+  name: z.string().min(1),
+  afm: z.string().regex(/^\d{9}$/),
+  email: z.string().email().optional().or(z.literal("")),
+  phone: z.string().optional().or(z.literal("")),
+  taxisnetUsername: z.string().min(1),
+  taxisnetPassword: z.string().min(1),
+  notes: z.string().optional().or(z.literal("")),
+});
+
+const clientUpdateSchema = z.object({
+  name: z.string().min(1),
+  afm: z.string().regex(/^\d{9}$/),
+  email: z.string().email().optional().or(z.literal("")),
+  phone: z.string().optional().or(z.literal("")),
+  taxisnetUsername: z.string().min(1),
+  taxisnetPassword: z.string().optional().or(z.literal("")),
+  notes: z.string().optional().or(z.literal("")),
+});
+
+// ── Types ────────────────────────────────────────────────────────
+
+export type ClientRow = {
+  id: string;
+  name: string;
+  afm: string;
+  email: string | null;
+  phone: string | null;
+  notes: string | null;
+  status: "ACTIVE" | "PENDING" | "ERROR";
+  lastScanAt: string | null;
+  totalDebts: number;
+  createdAt: string;
+  updatedAt: string;
+};
+
+// ── Helpers ──────────────────────────────────────────────────────
+
+const getAccountantId = async (): Promise<string> => {
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.id) {
+    throw new Error("Unauthorized");
+  }
+  return session.user.id;
+};
+
+// ── getClients ───────────────────────────────────────────────────
+
+export const getClients = async (): Promise<ClientRow[]> => {
+  const accountantId = await getAccountantId();
+
+  const clients = await prisma.client.findMany({
+    where: { accountantId },
+    orderBy: { name: "asc" },
+    select: {
+      id: true,
+      name: true,
+      afm: true,
+      email: true,
+      phone: true,
+      notes: true,
+      status: true,
+      lastScanAt: true,
+      totalDebts: true,
+      createdAt: true,
+      updatedAt: true,
+    },
+  });
+
+  return clients.map((c) => ({
+    id: c.id,
+    name: c.name,
+    afm: c.afm,
+    email: c.email,
+    phone: c.phone,
+    notes: c.notes,
+    status: c.status,
+    lastScanAt: c.lastScanAt?.toISOString() ?? null,
+    totalDebts: Number(c.totalDebts),
+    createdAt: c.createdAt.toISOString(),
+    updatedAt: c.updatedAt.toISOString(),
+  }));
+};
+
+// ── createClient ─────────────────────────────────────────────────
+
+export const createClient = async (
+  data: z.input<typeof clientCreateSchema>,
+): Promise<{ success: boolean; error?: string }> => {
+  const accountantId = await getAccountantId();
+
+  const parsed = clientCreateSchema.safeParse(data);
+  if (!parsed.success) {
+    return { success: false, error: "Validation failed" };
+  }
+
+  const { name, afm, email, phone, taxisnetUsername, taxisnetPassword, notes } =
+    parsed.data;
+
+  // Check for duplicate AFM
+  const existing = await prisma.client.findUnique({
+    where: { accountantId_afm: { accountantId, afm } },
+  });
+  if (existing) {
+    return { success: false, error: "A client with this AFM already exists" };
+  }
+
+  // Encrypt credentials
+  const encryptedUsername = JSON.stringify(encrypt(taxisnetUsername));
+  const encryptedPassword = JSON.stringify(encrypt(taxisnetPassword));
+
+  const client = await prisma.client.create({
+    data: {
+      accountantId,
+      name,
+      afm,
+      email: email || null,
+      phone: phone || null,
+      notes: notes || null,
+      taxisnetUsername: encryptedUsername,
+      taxisnetPassword: encryptedPassword,
+    },
+  });
+
+  await logAuditEvent({
+    accountantId,
+    action: "CLIENT_CREATED",
+    clientId: client.id,
+    details: { name, afm },
+  });
+
+  return { success: true };
+};
+
+// ── updateClient ─────────────────────────────────────────────────
+
+export const updateClient = async (
+  id: string,
+  data: z.input<typeof clientUpdateSchema>,
+): Promise<{ success: boolean; error?: string }> => {
+  const accountantId = await getAccountantId();
+
+  const parsed = clientUpdateSchema.safeParse(data);
+  if (!parsed.success) {
+    return { success: false, error: "Validation failed" };
+  }
+
+  // Verify ownership
+  const existing = await prisma.client.findFirst({
+    where: { id, accountantId },
+  });
+  if (!existing) {
+    return { success: false, error: "Client not found" };
+  }
+
+  const { name, afm, email, phone, taxisnetUsername, taxisnetPassword, notes } =
+    parsed.data;
+
+  // Check for duplicate AFM (if changed)
+  if (afm !== existing.afm) {
+    const duplicate = await prisma.client.findUnique({
+      where: { accountantId_afm: { accountantId, afm } },
+    });
+    if (duplicate) {
+      return { success: false, error: "A client with this AFM already exists" };
+    }
+  }
+
+  // Encrypt credentials
+  const encryptedUsername = JSON.stringify(encrypt(taxisnetUsername));
+
+  const updateData: Record<string, unknown> = {
+    name,
+    afm,
+    email: email || null,
+    phone: phone || null,
+    notes: notes || null,
+    taxisnetUsername: encryptedUsername,
+  };
+
+  // Only update password if a new one is provided
+  const credentialsUpdated = !!taxisnetPassword;
+  if (taxisnetPassword) {
+    updateData.taxisnetPassword = JSON.stringify(encrypt(taxisnetPassword));
+  }
+
+  await prisma.client.update({
+    where: { id },
+    data: updateData,
+  });
+
+  await logAuditEvent({
+    accountantId,
+    action: "CLIENT_UPDATED",
+    clientId: id,
+    details: { name, afm },
+  });
+
+  if (credentialsUpdated) {
+    await logAuditEvent({
+      accountantId,
+      action: "CREDENTIALS_UPDATED",
+      clientId: id,
+      details: { field: "taxisnetPassword" },
+    });
+  }
+
+  return { success: true };
+};
+
+// ── deleteClient ─────────────────────────────────────────────────
+
+export const deleteClient = async (
+  id: string,
+): Promise<{ success: boolean; error?: string }> => {
+  const accountantId = await getAccountantId();
+
+  // Verify ownership
+  const existing = await prisma.client.findFirst({
+    where: { id, accountantId },
+    select: { id: true, name: true, afm: true },
+  });
+  if (!existing) {
+    return { success: false, error: "Client not found" };
+  }
+
+  await prisma.client.delete({ where: { id } });
+
+  await logAuditEvent({
+    accountantId,
+    action: "CLIENT_DELETED",
+    clientId: id,
+    details: { name: existing.name, afm: existing.afm },
+  });
+
+  return { success: true };
+};
