@@ -13,18 +13,10 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { formatGreekDate } from "@/lib/general/format";
 import { Link } from "@/lib/i18n/navigation";
 import { getDashboardStats, getRecentDebts } from "@/server_actions/dashboard";
 import type { BasePageProps } from "@/types/page-props";
-
-const formatGreekDate = (isoString: string | null): string => {
-  if (!isoString) return "—";
-  return new Date(isoString).toLocaleDateString("el-GR", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-  });
-};
 
 const DashboardPage = async ({ params }: BasePageProps) => {
   const { locale } = await params;

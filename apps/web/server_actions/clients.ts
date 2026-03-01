@@ -1,12 +1,11 @@
 "use server";
 
 import { encrypt, prisma } from "@repo/shared";
-import { getServerSession } from "next-auth";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
 import { logAuditEvent } from "@/lib/auth/audit";
-import { authOptions } from "@/lib/auth/auth";
+import { getAccountantId } from "@/lib/auth/session";
 
 // ── Schemas ──────────────────────────────────────────────────────
 
@@ -44,16 +43,6 @@ export type ClientRow = {
   totalDebts: number;
   createdAt: string;
   updatedAt: string;
-};
-
-// ── Helpers ──────────────────────────────────────────────────────
-
-const getAccountantId = async (): Promise<string> => {
-  const session = await getServerSession(authOptions);
-  if (!session?.user?.id) {
-    throw new Error("Unauthorized");
-  }
-  return session.user.id;
 };
 
 // ── getClients ───────────────────────────────────────────────────
