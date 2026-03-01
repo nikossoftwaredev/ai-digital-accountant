@@ -8,14 +8,14 @@ export const authOptions: NextAuthOptions = {
   callbacks: {
     async session({ session }) {
       if (session.user?.email) {
-        const dbUser = await prisma.user.findUnique({
+        const accountant = await prisma.accountant.findUnique({
           where: { email: session.user.email },
           select: { id: true, email: true, name: true, image: true },
         });
-        if (dbUser)
+        if (accountant)
           session.user = {
             ...session.user,
-            id: dbUser.id,
+            id: accountant.id,
           };
       }
       return session;

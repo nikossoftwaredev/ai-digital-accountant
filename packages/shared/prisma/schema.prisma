@@ -8,31 +8,266 @@ datasource db {
   directUrl = env("DIRECT_URL")
 }
 
-model User {
-  id            String    @id @default(cuid())
-  email         String    @unique
-  name          String?
+// ═══════════════════════════════════════════
+// ACCOUNTANT — the admin user (replaces User)
+// ═══════════════════════════════════════════
+model Accountant {
+  id            String   @id @default(cuid())
+  email         String   @unique
+  name          String
+  passwordHash  String?  @map("password_hash")
   image         String?
-  emailVerified DateTime? @map("email_verified")
-  createdAt     DateTime  @default(now()) @map("created_at")
-  updatedAt     DateTime  @updatedAt @map("updated_at")
 
-  todos         Todo[]
+  // TOTP 2FA
+  totpSecret    String?  @map("totp_secret")    // AES-256-GCM encrypted
+  totpEnabled   Boolean  @default(false) @map("totp_enabled")
+  backupCodes   String[] @map("backup_codes")    // bcrypt hashed
 
-  @@map("users")
+  // Office info (for email signatures)
+  officeName    String?  @map("office_name")
+  officeAddress String?  @map("office_address")
+  officePhone   String?  @map("office_phone")
+
+  // SMTP settings — smtpPassword is AES-256-GCM encrypted
+  smtpHost      String?  @map("smtp_host")
+  smtpPort      Int?     @map("smtp_port")
+  smtpUsername   String?  @map("smtp_username")
+  smtpPassword  String?  @map("smtp_password")
+  smtpIv        String?  @map("smtp_iv")
+
+  // Scanning preferences
+  scanFrequency ScanFrequency @default(MANUAL) @map("scan_frequency")
+  autoNotify    Boolean       @default(false)  @map("auto_notify")
+
+  // Login security
+  failedAttempts Int       @default(0)  @map("failed_attempts")
+  lockedUntil    DateTime? @map("locked_until")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt      @map("updated_at")
+
+  // Relations
+  clients   Client[]
+  scans     Scan[]
+  emailLogs EmailLog[]
+  auditLogs AuditLog[]
+
+  @@map("accountants")
 }
 
-model Todo {
-  id          String   @id @default(cuid())
-  title       String
+enum ScanFrequency {
+  MANUAL
+  WEEKLY
+  MONTHLY
+}
+
+// ═══════════════════════════════════════════
+// CLIENT — the accountant's customer
+// ═══════════════════════════════════════════
+model Client {
+  id           String  @id @default(cuid())
+  accountantId String  @map("accountant_id")
+  accountant   Accountant @relation(fields: [accountantId], references: [id], onDelete: Cascade)
+
+  name  String
+  afm   String    // Greek Tax ID (9 digits)
+  email String?
+  phone String?
+  notes String?
+
+  // TaxisNet credentials — AES-256-GCM encrypted
+  taxisnetUsername String? @map("taxisnet_username")
+  taxisnetPassword String? @map("taxisnet_password")
+  encryptionIv     String? @map("encryption_iv")
+
+  // Status
+  status     ClientStatus @default(PENDING)
+  lastScanAt DateTime?    @map("last_scan_at")
+  totalDebts Decimal      @default(0) @db.Decimal(12, 2) @map("total_debts")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt      @map("updated_at")
+
+  // Relations
+  scans     Scan[]
+  debts     Debt[]
+  emailLogs EmailLog[]
+  auditLogs AuditLog[]
+
+  @@unique([accountantId, afm])
+  @@index([accountantId])
+  @@index([status])
+  @@map("clients")
+}
+
+enum ClientStatus {
+  ACTIVE
+  PENDING
+  ERROR
+}
+
+// ═══════════════════════════════════════════
+// SCAN — a single scan execution
+// ═══════════════════════════════════════════
+model Scan {
+  id           String  @id @default(cuid())
+  clientId     String  @map("client_id")
+  client       Client  @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  accountantId String  @map("accountant_id")
+  accountant   Accountant @relation(fields: [accountantId], references: [id])
+
+  status      ScanStatus @default(QUEUED)
+  startedAt   DateTime?  @map("started_at")
+  completedAt DateTime?  @map("completed_at")
+
+  errorMessage String?    @map("error_message")
+  errorType    ErrorType? @map("error_type")
+
+  // Per-platform status as JSON array
+  platformStatuses Json @default("[]") @map("platform_statuses")
+
+  totalDebtsFound Decimal @default(0) @db.Decimal(12, 2) @map("total_debts_found")
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  // Relations
+  debts Debt[]
+
+  @@index([clientId, createdAt(sort: Desc)])
+  @@index([accountantId, createdAt(sort: Desc)])
+  @@index([status])
+  @@map("scans")
+}
+
+enum ScanStatus {
+  QUEUED
+  RUNNING
+  COMPLETED
+  FAILED
+  CANCELLED
+}
+
+enum ErrorType {
+  LOGIN_FAILED
+  CAPTCHA
+  TIMEOUT
+  UI_CHANGED
+}
+
+// ═══════════════════════════════════════════
+// DEBT — a single debt record from a scan
+// ═══════════════════════════════════════════
+model Debt {
+  id       String @id @default(cuid())
+  clientId String @map("client_id")
+  client   Client @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  scanId   String @map("scan_id")
+  scan     Scan   @relation(fields: [scanId], references: [id], onDelete: Cascade)
+
+  category    DebtCategory
+  amount      Decimal      @db.Decimal(12, 2)
+  platform    Platform
+  priority    Priority     @default(MEDIUM)
   description String?
-  completed   Boolean  @default(false)
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
+  dueDate     DateTime?    @map("due_date")
 
-  userId      String   @map("user_id")
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now()) @map("created_at")
 
-  @@index([userId])
-  @@map("todos")
+  @@index([scanId])
+  @@index([clientId, createdAt(sort: Desc)])
+  @@map("debts")
+}
+
+enum DebtCategory {
+  VAT
+  EFKA
+  INCOME_TAX
+  ENFIA
+  CERTIFIED_DEBTS
+  VEHICLE_TAX
+  GEMI
+  PROFESSIONAL_TAX
+  TAX_PREPAYMENT
+  MUNICIPAL_TAX
+}
+
+enum Platform {
+  AADE
+  EFKA
+  GEMI
+  MUNICIPALITY
+}
+
+enum Priority {
+  HIGH
+  MEDIUM
+  LOW
+}
+
+// ═══════════════════════════════════════════
+// EMAIL LOG
+// ═══════════════════════════════════════════
+model EmailLog {
+  id           String  @id @default(cuid())
+  clientId     String  @map("client_id")
+  client       Client  @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  accountantId String  @map("accountant_id")
+  accountant   Accountant @relation(fields: [accountantId], references: [id])
+
+  recipientEmail String    @map("recipient_email")
+  subject        String
+  body           String    @db.Text
+  sentAt         DateTime? @map("sent_at")
+  status         EmailStatus @default(PENDING)
+  errorMessage   String?   @map("error_message")
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([clientId, createdAt(sort: Desc)])
+  @@index([accountantId, createdAt(sort: Desc)])
+  @@index([status])
+  @@map("email_logs")
+}
+
+enum EmailStatus {
+  SENT
+  FAILED
+  PENDING
+}
+
+// ═══════════════════════════════════════════
+// AUDIT LOG
+// ═══════════════════════════════════════════
+model AuditLog {
+  id           String  @id @default(cuid())
+  accountantId String  @map("accountant_id")
+  accountant   Accountant @relation(fields: [accountantId], references: [id])
+  clientId     String?    @map("client_id")
+  client       Client?    @relation(fields: [clientId], references: [id], onDelete: SetNull)
+
+  action    AuditAction
+  ipAddress String? @map("ip_address")
+  userAgent String? @map("user_agent")
+  details   Json    @default("{}")
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([accountantId, createdAt(sort: Desc)])
+  @@index([action, createdAt(sort: Desc)])
+  @@map("audit_logs")
+}
+
+enum AuditAction {
+  LOGIN
+  LOGOUT
+  LOGIN_FAILED
+  CLIENT_CREATED
+  CLIENT_UPDATED
+  CLIENT_DELETED
+  CREDENTIALS_UPDATED
+  SCAN_STARTED
+  SCAN_COMPLETED
+  EMAIL_SENT
+  DECRYPT_REQUESTED
+  SETTINGS_CHANGED
 }
