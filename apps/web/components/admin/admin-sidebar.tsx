@@ -1,7 +1,8 @@
 "use client";
 
-import { signOut, useSession } from "next-auth/react";
 import { ChevronsUpDown, Command, Home, LogOut } from "lucide-react";
+import { signOut, useSession } from "next-auth/react";
+import { useTranslations } from "next-intl";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
@@ -26,13 +27,14 @@ import {
   SidebarRail,
   useSidebar,
 } from "@/components/ui/sidebar";
+import { adminNavGroups } from "@/lib/admin/config";
 import { Link, usePathname } from "@/lib/i18n/navigation";
-import { adminNavItems } from "@/lib/admin/config";
 
 export const AdminSidebar = () => {
   const pathname = usePathname();
   const { setOpenMobile, isMobile } = useSidebar();
   const { data: session } = useSession();
+  const t = useTranslations();
 
   const userName = session?.user?.name || "Admin User";
   const userEmail = session?.user?.email || "admin@example.com";
@@ -65,26 +67,29 @@ export const AdminSidebar = () => {
       </SidebarHeader>
 
       <SidebarContent>
-        {Object.entries(adminNavItems).map(([group, buttons]) => (
-          <SidebarGroup key={group}>
-            <SidebarGroupLabel>{group}</SidebarGroupLabel>
+        {adminNavGroups.map((group) => (
+          <SidebarGroup key={group.groupKey}>
+            <SidebarGroupLabel>{t(group.groupKey)}</SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu>
-                {buttons.map((button) => {
-                  const href = `/admin/${button.href}`;
+                {group.items.map((item) => {
                   const active =
-                    pathname === href || pathname.startsWith(`${href}/`);
+                    pathname === item.href ||
+                    pathname.startsWith(`${item.href}/`);
 
                   return (
-                    <SidebarMenuItem key={button.href}>
+                    <SidebarMenuItem key={item.href}>
                       <SidebarMenuButton
                         asChild
                         isActive={active}
-                        tooltip={button.label}
+                        tooltip={t(item.labelKey)}
                       >
-                        <Link href={href} onClick={() => setOpenMobile(false)}>
-                          <button.icon className="size-4" />
-                          <span>{button.label}</span>
+                        <Link
+                          href={item.href}
+                          onClick={() => setOpenMobile(false)}
+                        >
+                          <item.icon className="size-4" />
+                          <span>{t(item.labelKey)}</span>
                         </Link>
                       </SidebarMenuButton>
                     </SidebarMenuItem>
