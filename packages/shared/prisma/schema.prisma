@@ -75,10 +75,9 @@ model Client {
   phone String?
   notes String?
 
-  // TaxisNet credentials — AES-256-GCM encrypted
+  // TaxisNet credentials — AES-256-GCM encrypted (each stored as JSON with ciphertext, iv, tag)
   taxisnetUsername String? @map("taxisnet_username")
   taxisnetPassword String? @map("taxisnet_password")
-  encryptionIv     String? @map("encryption_iv")
 
   // Status
   status     ClientStatus @default(PENDING)

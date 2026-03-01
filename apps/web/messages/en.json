@@ -59,7 +59,8 @@
       "cancel": "Cancel",
       "afmValidation": "Tax ID must be exactly 9 digits",
       "noClients": "No clients found",
-      "addFirst": "Add your first client"
+      "addFirst": "Add your first client",
+      "required": "Required field"
     },
     "scans": {
       "title": "Scans",
@@ -171,7 +172,8 @@
       "amount": "Amount",
       "date": "Date",
       "type": "Type",
-      "search": "Search..."
+      "search": "Search...",
+      "required": "Required field"
     }
   },
   "Auth": {

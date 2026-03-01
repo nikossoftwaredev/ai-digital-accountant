@@ -2,6 +2,7 @@
 
 import { encrypt, prisma } from "@repo/shared";
 import { getServerSession } from "next-auth";
+import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
 import { logAuditEvent } from "@/lib/auth/audit";
@@ -140,6 +141,7 @@ export const createClient = async (
     details: { name, afm },
   });
 
+  revalidatePath("/admin/clients");
   return { success: true };
 };
 
@@ -221,6 +223,7 @@ export const updateClient = async (
     });
   }
 
+  revalidatePath("/admin/clients");
   return { success: true };
 };
 
@@ -249,5 +252,6 @@ export const deleteClient = async (
     details: { name: existing.name, afm: existing.afm },
   });
 
+  revalidatePath("/admin/clients");
   return { success: true };
 };

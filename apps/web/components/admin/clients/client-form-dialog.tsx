@@ -108,11 +108,11 @@ export const ClientFormDialog = ({
       // For create, username and password are required
       let hasError = false;
       if (!values.taxisnetUsername) {
-        form.setError("taxisnetUsername", { message: "Required" });
+        form.setError("taxisnetUsername", { message: t("required") });
         hasError = true;
       }
       if (!values.taxisnetPassword) {
-        form.setError("taxisnetPassword", { message: "Required" });
+        form.setError("taxisnetPassword", { message: t("required") });
         hasError = true;
       }
       if (hasError) return;

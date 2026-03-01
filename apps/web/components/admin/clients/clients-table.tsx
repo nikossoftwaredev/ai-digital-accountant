@@ -36,6 +36,12 @@ export const ClientsTable = ({ clients }: ClientsTableProps) => {
   const t = useTranslations("Admin.clients");
   const router = useRouter();
 
+  const statusLabels: Record<string, string> = {
+    ACTIVE: t("statusActive"),
+    PENDING: t("statusPending"),
+    ERROR: t("statusError"),
+  };
+
   const [clientToEdit, setClientToEdit] = useState<ClientRow | null>(null);
   const [clientToDelete, setClientToDelete] = useState<ClientRow | null>(null);
 
@@ -85,7 +91,7 @@ export const ClientsTable = ({ clients }: ClientsTableProps) => {
                 <TableCell className="font-mono">{client.afm}</TableCell>
                 <TableCell>{client.email ?? "—"}</TableCell>
                 <TableCell>
-                  <StatusBadge status={client.status} />
+                  <StatusBadge status={client.status} label={statusLabels[client.status]} />
                 </TableCell>
                 <TableCell>{formatDate(client.lastScanAt)}</TableCell>
                 <TableCell className="text-right">
