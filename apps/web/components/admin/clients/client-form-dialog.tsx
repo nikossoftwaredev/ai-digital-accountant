@@ -35,7 +35,7 @@ const clientFormSchema = z.object({
   afm: z.string().regex(/^\d{9}$/),
   email: z.string().email().optional().or(z.literal("")),
   phone: z.string().optional().or(z.literal("")),
-  taxisnetUsername: z.string().min(1),
+  taxisnetUsername: z.string().optional().or(z.literal("")),
   taxisnetPassword: z.string().optional().or(z.literal("")),
   notes: z.string().optional().or(z.literal("")),
 });
@@ -105,14 +105,21 @@ export const ClientFormDialog = ({
 
   const onSubmit = async (values: ClientFormValues) => {
     if (mode === "add") {
-      // For create, password is required
+      // For create, username and password are required
+      let hasError = false;
+      if (!values.taxisnetUsername) {
+        form.setError("taxisnetUsername", { message: "Required" });
+        hasError = true;
+      }
       if (!values.taxisnetPassword) {
         form.setError("taxisnetPassword", { message: "Required" });
-        return;
+        hasError = true;
       }
+      if (hasError) return;
       const result = await createClient({
         ...values,
-        taxisnetPassword: values.taxisnetPassword,
+        taxisnetUsername: values.taxisnetUsername!,
+        taxisnetPassword: values.taxisnetPassword!,
       });
       if (!result.success) {
         form.setError("root", { message: result.error });
@@ -216,6 +223,11 @@ export const ClientFormDialog = ({
                   <FormControl>
                     <Input {...field} />
                   </FormControl>
+                  {isEdit && (
+                    <FormDescription>
+                      {t("taxisnetPasswordHint")}
+                    </FormDescription>
+                  )}
                   <FormMessage />
                 </FormItem>
               )}

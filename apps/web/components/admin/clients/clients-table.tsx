@@ -1,6 +1,6 @@
 "use client";
 
-import { History,Mail, MoreHorizontal, Pencil, Scan, Trash2 } from "lucide-react";
+import { Mail, MoreHorizontal, Pencil, Scan, Trash2 } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useState } from "react";
 
@@ -111,10 +111,6 @@ export const ClientsTable = ({ clients }: ClientsTableProps) => {
                       <DropdownMenuItem disabled>
                         <Scan className="size-4" />
                         {t("scan")}
-                      </DropdownMenuItem>
-                      <DropdownMenuItem disabled>
-                        <History className="size-4" />
-                        {t("history")}
                       </DropdownMenuItem>
                       <DropdownMenuItem disabled>
                         <Mail className="size-4" />

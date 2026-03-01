@@ -24,7 +24,7 @@ const clientUpdateSchema = z.object({
   afm: z.string().regex(/^\d{9}$/),
   email: z.string().email().optional().or(z.literal("")),
   phone: z.string().optional().or(z.literal("")),
-  taxisnetUsername: z.string().min(1),
+  taxisnetUsername: z.string().optional().or(z.literal("")),
   taxisnetPassword: z.string().optional().or(z.literal("")),
   notes: z.string().optional().or(z.literal("")),
 });
@@ -177,21 +177,21 @@ export const updateClient = async (
     }
   }
 
-  // Encrypt credentials
-  const encryptedUsername = JSON.stringify(encrypt(taxisnetUsername));
-
   const updateData: Record<string, unknown> = {
     name,
     afm,
     email: email || null,
     phone: phone || null,
     notes: notes || null,
-    taxisnetUsername: encryptedUsername,
   };
 
-  // Only update password if a new one is provided
-  const credentialsUpdated = !!taxisnetPassword;
-  if (taxisnetPassword) {
+  // Only update credentials if new values are provided
+  const usernameUpdated = !!taxisnetUsername;
+  const passwordUpdated = !!taxisnetPassword;
+  if (usernameUpdated) {
+    updateData.taxisnetUsername = JSON.stringify(encrypt(taxisnetUsername));
+  }
+  if (passwordUpdated) {
     updateData.taxisnetPassword = JSON.stringify(encrypt(taxisnetPassword));
   }
 
@@ -207,12 +207,17 @@ export const updateClient = async (
     details: { name, afm },
   });
 
-  if (credentialsUpdated) {
+  if (usernameUpdated || passwordUpdated) {
     await logAuditEvent({
       accountantId,
       action: "CREDENTIALS_UPDATED",
       clientId: id,
-      details: { field: "taxisnetPassword" },
+      details: {
+        fields: [
+          ...(usernameUpdated ? ["taxisnetUsername"] : []),
+          ...(passwordUpdated ? ["taxisnetPassword"] : []),
+        ],
+      },
     });
   }
 
