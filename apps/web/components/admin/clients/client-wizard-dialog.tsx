@@ -5,21 +5,14 @@ import {
   ArrowLeft,
   CheckCircle,
   FileText,
-  Hash,
-  IdCard,
   KeyRound,
   Loader2,
-  Mail,
-  MessageSquare,
-  Phone,
   Search,
-  User,
   XIcon,
 } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
-import { z } from "zod";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -32,30 +25,13 @@ import {
 } from "@/components/ui/dialog";
 import {
   Form,
-  FormControl,
-  FormDescription,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Spinner } from "@/components/ui/spinner";
-import { Textarea } from "@/components/ui/textarea";
 import { createClient } from "@/server_actions/clients";
 
-// ── Form schema (same as ClientFormDialog) ───────────────────────
-
-const clientFormSchema = z.object({
-  name: z.string().min(1),
-  afm: z.string().regex(/^\d{9}$/),
-  amka: z.string().regex(/^\d{11}$/).optional().or(z.literal("")),
-  email: z.string().email().optional().or(z.literal("")),
-  phone: z.string().optional().or(z.literal("")),
-  notes: z.string().optional().or(z.literal("")),
-});
-
-type ClientFormValues = z.infer<typeof clientFormSchema>;
+import { ClientFormFields } from "./client-form-fields";
+import { clientBaseSchema, type ClientBaseFormValues } from "./client-form-schema";
 
 // ── Types ────────────────────────────────────────────────────────
 
@@ -93,10 +69,12 @@ export const ClientWizardDialog = ({
   const [lookupStatus, setLookupStatus] = useState<LookupStatus>("idle");
   const [lookupError, setLookupError] = useState("");
   const [autoFetched, setAutoFetched] = useState(false);
-  const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const pollingRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const abortRef = useRef<AbortController | null>(null);
 
-  const form = useForm<ClientFormValues>({
-    resolver: zodResolver(clientFormSchema),
+  const form = useForm<ClientBaseFormValues>({
+    resolver: zodResolver(clientBaseSchema),
     defaultValues: {
       name: "",
       afm: "",
@@ -107,10 +85,12 @@ export const ClientWizardDialog = ({
     },
   });
 
-  // Clean up polling on unmount
+  // Clean up polling, timeout, and abort on unmount
   useEffect(() => {
     return () => {
-      if (pollingRef.current) clearInterval(pollingRef.current);
+      if (pollingRef.current) clearTimeout(pollingRef.current);
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+      abortRef.current?.abort();
     };
   }, []);
 
@@ -125,14 +105,35 @@ export const ClientWizardDialog = ({
       setAutoFetched(false);
       form.reset();
       if (pollingRef.current) {
-        clearInterval(pollingRef.current);
+        clearTimeout(pollingRef.current);
         pollingRef.current = null;
       }
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+        timeoutRef.current = null;
+      }
+      abortRef.current?.abort();
+      abortRef.current = null;
     }
   }, [open, form]);
 
   const handleLookup = useCallback(async () => {
     if (!username || !password) return;
+
+    // Clear any existing timers / in-flight requests before starting
+    if (pollingRef.current) {
+      clearTimeout(pollingRef.current);
+      pollingRef.current = null;
+    }
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+      timeoutRef.current = null;
+    }
+    abortRef.current?.abort();
+
+    const controller = new AbortController();
+    abortRef.current = controller;
+
     setLookupStatus("loading");
     setLookupError("");
 
@@ -144,6 +145,7 @@ export const ClientWizardDialog = ({
           taxisnetUsername: username,
           taxisnetPassword: password,
         }),
+        signal: controller.signal,
       });
 
       if (!res.ok) {
@@ -154,16 +156,20 @@ export const ClientWizardDialog = ({
 
       const { jobId } = await res.json();
 
-      // Poll for result
-      pollingRef.current = setInterval(async () => {
+      // Recursive poll-after-response pattern
+      const poll = async () => {
         try {
           const statusRes = await fetch(
             `/api/clients/lookup/${jobId}/status`,
+            { signal: controller.signal },
           );
           const statusData = await statusRes.json();
 
           if (statusData.status === "completed") {
-            if (pollingRef.current) clearInterval(pollingRef.current);
+            if (timeoutRef.current) {
+              clearTimeout(timeoutRef.current);
+              timeoutRef.current = null;
+            }
             pollingRef.current = null;
             const data = statusData.data as LookupResult;
 
@@ -180,26 +186,39 @@ export const ClientWizardDialog = ({
             setLookupStatus("success");
             setStep("review");
           } else if (statusData.status === "failed") {
-            if (pollingRef.current) clearInterval(pollingRef.current);
+            if (timeoutRef.current) {
+              clearTimeout(timeoutRef.current);
+              timeoutRef.current = null;
+            }
             pollingRef.current = null;
             setLookupStatus("failed");
             setLookupError(statusData.error || t("lookupFailed"));
+          } else {
+            // Still pending — schedule next poll
+            pollingRef.current = setTimeout(poll, 2000);
           }
-        } catch {
-          // Continue polling on network errors
+        } catch (err) {
+          // If aborted, stop silently; otherwise keep polling
+          if (err instanceof DOMException && err.name === "AbortError") return;
+          pollingRef.current = setTimeout(poll, 2000);
         }
-      }, 2000);
+      };
+
+      pollingRef.current = setTimeout(poll, 2000);
 
       // Timeout after 90 seconds
-      setTimeout(() => {
+      timeoutRef.current = setTimeout(() => {
         if (pollingRef.current) {
-          clearInterval(pollingRef.current);
+          clearTimeout(pollingRef.current);
           pollingRef.current = null;
-          setLookupStatus("failed");
-          setLookupError(t("lookupFailed"));
         }
+        timeoutRef.current = null;
+        controller.abort();
+        setLookupStatus("failed");
+        setLookupError(t("lookupFailed"));
       }, 90_000);
-    } catch {
+    } catch (err) {
+      if (err instanceof DOMException && err.name === "AbortError") return;
       setLookupStatus("failed");
       setLookupError(t("lookupFailed"));
     }
@@ -218,7 +237,7 @@ export const ClientWizardDialog = ({
     setStep("review");
   };
 
-  const handleSubmit = async (values: ClientFormValues) => {
+  const handleSubmit = async (values: ClientBaseFormValues) => {
     const result = await createClient({
       ...values,
       taxisnetUsername: username,
@@ -360,118 +379,9 @@ export const ClientWizardDialog = ({
                 </Badge>
               )}
 
-              <FormField
-                control={form.control}
-                name="name"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>
-                      <User className="inline size-3.5" /> {t("name")}
-                    </FormLabel>
-                    <FormControl>
-                      <Input
-                        {...field}
-                        readOnly={autoFetched}
-                        className={autoFetched ? "bg-muted" : ""}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="afm"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>
-                      <Hash className="inline size-3.5" /> {t("afm")}
-                    </FormLabel>
-                    <FormControl>
-                      <Input
-                        {...field}
-                        maxLength={9}
-                        readOnly={autoFetched}
-                        className={autoFetched ? "bg-muted" : ""}
-                      />
-                    </FormControl>
-                    <FormDescription>{t("afmValidation")}</FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="amka"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>
-                      <IdCard className="inline size-3.5" /> {t("amka")}
-                    </FormLabel>
-                    <FormControl>
-                      <Input
-                        {...field}
-                        maxLength={11}
-                        readOnly={autoFetched}
-                        className={autoFetched ? "bg-muted" : ""}
-                      />
-                    </FormControl>
-                    <FormDescription>{t("amkaValidation")}</FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <div className="grid grid-cols-2 gap-4">
-                <FormField
-                  control={form.control}
-                  name="email"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>
-                        <Mail className="inline size-3.5" /> {t("email")}
-                      </FormLabel>
-                      <FormControl>
-                        <Input type="email" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="phone"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>
-                        <Phone className="inline size-3.5" /> {t("phone")}
-                      </FormLabel>
-                      <FormControl>
-                        <Input {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-
-              <FormField
-                control={form.control}
-                name="notes"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>
-                      <MessageSquare className="inline size-3.5" />{" "}
-                      {t("notes")}
-                    </FormLabel>
-                    <FormControl>
-                      <Textarea rows={3} {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
+              <ClientFormFields
+                form={form}
+                readOnlyFields={autoFetched ? ["name", "afm", "amka"] : []}
               />
 
               <DialogFooter>

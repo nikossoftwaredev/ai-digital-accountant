@@ -1,11 +1,10 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { FileText, Hash, IdCard, KeyRound, Mail, MessageSquare, Phone, User, XIcon } from "lucide-react";
+import { XIcon } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useCallback, useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
-import { z } from "zod";
 
 import {
   AlertDialog,
@@ -27,33 +26,13 @@ import {
 } from "@/components/ui/dialog";
 import {
   Form,
-  FormControl,
-  FormDescription,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
 } from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
 import { Spinner } from "@/components/ui/spinner";
-import { Textarea } from "@/components/ui/textarea";
 import type { ClientRow } from "@/server_actions/clients";
 import { createClient, updateClient } from "@/server_actions/clients";
 
-// ── Form schema ──────────────────────────────────────────────────
-
-const clientFormSchema = z.object({
-  name: z.string().min(1),
-  afm: z.string().regex(/^\d{9}$/),
-  amka: z.string().regex(/^\d{11}$/).optional().or(z.literal("")),
-  email: z.string().email().optional().or(z.literal("")),
-  phone: z.string().optional().or(z.literal("")),
-  taxisnetUsername: z.string().optional().or(z.literal("")),
-  taxisnetPassword: z.string().optional().or(z.literal("")),
-  notes: z.string().optional().or(z.literal("")),
-});
-
-type ClientFormValues = z.infer<typeof clientFormSchema>;
+import { ClientFormFields } from "./client-form-fields";
+import { clientExtendedSchema, type ClientExtendedFormValues } from "./client-form-schema";
 
 // ── Props ────────────────────────────────────────────────────────
 
@@ -77,8 +56,8 @@ export const ClientFormDialog = ({
   const t = useTranslations("Admin.clients");
   const [showDiscardAlert, setShowDiscardAlert] = useState(false);
 
-  const form = useForm<ClientFormValues>({
-    resolver: zodResolver(clientFormSchema),
+  const form = useForm<ClientExtendedFormValues>({
+    resolver: zodResolver(clientExtendedSchema),
     defaultValues: {
       name: "",
       afm: "",
@@ -120,7 +99,7 @@ export const ClientFormDialog = ({
     }
   }, [open, mode, client, form]);
 
-  const onSubmit = async (values: ClientFormValues) => {
+  const onSubmit = async (values: ClientExtendedFormValues) => {
     if (mode === "add") {
       // For create, username and password are required
       let hasError = false;
@@ -195,130 +174,10 @@ export const ClientFormDialog = ({
               </p>
             )}
 
-            <FormField
-              control={form.control}
-              name="name"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel><User className="inline size-3.5" /> {t("name")}</FormLabel>
-                  <FormControl>
-                    <Input {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="afm"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel><Hash className="inline size-3.5" /> {t("afm")}</FormLabel>
-                  <FormControl>
-                    <Input {...field} maxLength={9} />
-                  </FormControl>
-                  <FormDescription>{t("afmValidation")}</FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="amka"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel><IdCard className="inline size-3.5" /> {t("amka")}</FormLabel>
-                  <FormControl>
-                    <Input {...field} maxLength={11} />
-                  </FormControl>
-                  <FormDescription>{t("amkaValidation")}</FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <div className="grid grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="email"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel><Mail className="inline size-3.5" /> {t("email")}</FormLabel>
-                    <FormControl>
-                      <Input type="email" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="phone"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel><Phone className="inline size-3.5" /> {t("phone")}</FormLabel>
-                    <FormControl>
-                      <Input {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-
-            <FormField
-              control={form.control}
-              name="taxisnetUsername"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel><FileText className="inline size-3.5" /> {t("taxisnetUsername")}</FormLabel>
-                  <FormControl>
-                    <Input {...field} />
-                  </FormControl>
-                  {isEdit && (
-                    <FormDescription>
-                      {t("taxisnetPasswordHint")}
-                    </FormDescription>
-                  )}
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="taxisnetPassword"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel><KeyRound className="inline size-3.5" /> {t("taxisnetPassword")}</FormLabel>
-                  <FormControl>
-                    <Input type="password" {...field} />
-                  </FormControl>
-                  {isEdit && (
-                    <FormDescription>
-                      {t("taxisnetPasswordHint")}
-                    </FormDescription>
-                  )}
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="notes"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel><MessageSquare className="inline size-3.5" /> {t("notes")}</FormLabel>
-                  <FormControl>
-                    <Textarea rows={3} {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
+            <ClientFormFields
+              form={form}
+              showCredentials
+              isEdit={isEdit}
             />
 
             <DialogFooter>
