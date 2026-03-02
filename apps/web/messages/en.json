@@ -127,7 +127,13 @@
       "client": "Client",
       "status": "Status",
       "startedAt": "Started",
-      "completedAt": "Completed"
+      "completedAt": "Completed",
+      "emailsSent": "Emails Sent",
+      "noEmailsSent": "No emails sent to this client yet",
+      "searchClientPlaceholder": "Search clients by name or AFM...",
+      "statusActive": "Active",
+      "statusPending": "Pending",
+      "statusError": "Error"
     },
     "certificates": {
       "title": "Certificates",

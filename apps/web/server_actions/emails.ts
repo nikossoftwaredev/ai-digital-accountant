@@ -125,6 +125,35 @@ export const sendBulkEmails = async (
   };
 };
 
+// ── getClientEmailLogs ──────────────────────────────────────────
+
+export const getClientEmailLogs = async (clientId: string, limit = 20) => {
+  const accountantId = await getAccountantId();
+
+  const logs = await prisma.emailLog.findMany({
+    where: { clientId, accountantId },
+    orderBy: { createdAt: "desc" },
+    take: limit,
+    select: {
+      id: true,
+      recipientEmail: true,
+      subject: true,
+      status: true,
+      sentAt: true,
+      createdAt: true,
+    },
+  });
+
+  return logs.map((l) => ({
+    id: l.id,
+    recipientEmail: l.recipientEmail,
+    subject: l.subject,
+    status: l.status,
+    sentAt: l.sentAt?.toISOString() ?? null,
+    createdAt: l.createdAt.toISOString(),
+  }));
+};
+
 // ── getClientsWithDebts ──────────────────────────────────────────
 
 export type ClientWithDebtInfo = {

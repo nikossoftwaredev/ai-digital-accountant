@@ -126,7 +126,13 @@
       "client": "Πελάτης",
       "status": "Κατάσταση",
       "startedAt": "Έναρξη",
-      "completedAt": "Ολοκλήρωση"
+      "completedAt": "Ολοκλήρωση",
+      "emailsSent": "Απεσταλμένα Email",
+      "noEmailsSent": "Δεν έχουν σταλεί email σε αυτόν τον πελάτη",
+      "searchClientPlaceholder": "Αναζήτηση πελατών κατά όνομα ή ΑΦΜ...",
+      "statusActive": "Ενεργός",
+      "statusPending": "Εκκρεμής",
+      "statusError": "Σφάλμα"
     },
     "certificates": {
       "title": "Βεβαιώσεις",

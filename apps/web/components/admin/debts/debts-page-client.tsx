@@ -1,37 +1,23 @@
 "use client";
 
-import { Check, ChevronsUpDown } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 
+import { ClientSearchBar } from "@/components/admin/shared/client-search-bar";
 import { PageHeader } from "@/components/admin/shared/page-header";
-import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-} from "@/components/ui/command";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import { cn } from "@/lib/general/utils";
 import type { ClientRow } from "@/server_actions/clients";
 import type { ClientDebtSummaryData, DebtFileRow, ScanRow } from "@/server_actions/scans";
 import { getClientDebtSummary, startScan } from "@/server_actions/scans";
 
 import { ClientDebtSummary } from "./client-debt-summary";
+import { ClientEmailHistory } from "./client-email-history";
 import { DebtServiceCard } from "./debt-service-card";
 import { ScanHistoryTable } from "./scan-history-table";
 import { ScanProgressCard } from "./scan-progress-card";
@@ -76,7 +62,6 @@ export const DebtsPageClient = ({
   const t = useTranslations("Admin.debts");
 
   const [selectedClientId, setSelectedClientId] = useState<string>(initialClientId ?? clients[0]?.id ?? "");
-  const [comboboxOpen, setComboboxOpen] = useState(false);
   const [aadeScanStatus, setAadeScanStatus] = useState<ScanStatus>("idle");
   const [efkaScanStatus, setEfkaScanStatus] = useState<ScanStatus>("idle");
   const [gemiScanStatus, setGemiScanStatus] = useState<ScanStatus>("idle");
@@ -299,6 +284,9 @@ export const DebtsPageClient = ({
         clientId={selectedClientId}
         refreshKey={summaryRefreshKey}
       />
+
+      {/* Client Email History */}
+      {selectedClientId && <ClientEmailHistory clientId={selectedClientId} />}
 
       {/* Scan History */}
       <Card>
