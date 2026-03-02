@@ -75,7 +75,20 @@
       "discardChangesTitle": "Discard changes?",
       "discardChangesDesc": "You have unsaved changes. Are you sure you want to close?",
       "discard": "Discard",
-      "keepEditing": "Keep editing"
+      "keepEditing": "Keep editing",
+      "wizardTitle": "Add New Client",
+      "stepCredentials": "TaxisNet Credentials",
+      "stepCredentialsDesc": "Enter the client's TaxisNet credentials to automatically fetch their data.",
+      "lookup": "Lookup",
+      "lookingUp": "Looking up client data...",
+      "lookupSuccess": "Client data found!",
+      "lookupFailed": "Could not fetch client data. Please fill in the fields manually.",
+      "stepReview": "Review & Save",
+      "stepReviewDesc": "Review the data found and add any additional information.",
+      "firstName": "First Name",
+      "lastName": "Last Name",
+      "autoFetched": "Auto-fetched from EFKA",
+      "skipLookup": "Skip, enter manually"
     },
     "debts": {
       "title": "Debts",

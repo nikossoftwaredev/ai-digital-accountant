@@ -9,8 +9,8 @@ import { Button } from "@/components/ui/button";
 import { useRouter } from "@/lib/i18n/navigation";
 import type { ClientRow } from "@/server_actions/clients";
 
-import { ClientFormDialog } from "./client-form-dialog";
 import { ClientsTable } from "./clients-table";
+import { ClientWizardDialog } from "./client-wizard-dialog";
 
 interface ClientsPageClientProps {
   clients: ClientRow[];
@@ -36,8 +36,7 @@ export const ClientsPageClient = ({ clients }: ClientsPageClientProps) => {
 
       <ClientsTable clients={clients} />
 
-      <ClientFormDialog
-        mode="add"
+      <ClientWizardDialog
         open={addDialogOpen}
         onOpenChange={setAddDialogOpen}
         onSuccess={() => {
