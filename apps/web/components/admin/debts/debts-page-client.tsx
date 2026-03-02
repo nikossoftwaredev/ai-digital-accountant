@@ -151,58 +151,11 @@ export const DebtsPageClient = ({
       <PageHeader title={t("title")} description={t("description")} />
 
       {/* Client Selector */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">{t("selectClient")}</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Popover open={comboboxOpen} onOpenChange={setComboboxOpen}>
-            <PopoverTrigger asChild>
-              <Button
-                variant="outline"
-                role="combobox"
-                aria-expanded={comboboxOpen}
-                className="w-full max-w-md justify-between"
-              >
-                {selectedClient
-                  ? `${selectedClient.name} (${selectedClient.afm})`
-                  : t("selectClientPlaceholder")}
-                <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-full max-w-md p-0" align="start">
-              <Command>
-                <CommandInput placeholder={t("searchClient")} />
-                <CommandList>
-                  <CommandEmpty>{t("noClientFound")}</CommandEmpty>
-                  <CommandGroup>
-                    {clients.map((client) => (
-                      <CommandItem
-                        key={client.id}
-                        value={`${client.name} ${client.afm}`}
-                        onSelect={() => {
-                          setSelectedClientId(client.id);
-                          setComboboxOpen(false);
-                        }}
-                      >
-                        <Check
-                          className={cn(
-                            "mr-2 h-4 w-4",
-                            selectedClientId === client.id
-                              ? "opacity-100"
-                              : "opacity-0"
-                          )}
-                        />
-                        {client.name} ({client.afm})
-                      </CommandItem>
-                    ))}
-                  </CommandGroup>
-                </CommandList>
-              </Command>
-            </PopoverContent>
-          </Popover>
-        </CardContent>
-      </Card>
+      <ClientSearchBar
+        clients={clients}
+        selectedClientId={selectedClientId}
+        onSelect={setSelectedClientId}
+      />
 
       {/* Service Cards */}
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
