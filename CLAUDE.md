@@ -39,20 +39,26 @@ ai-digital-accountant/
     prisma/schema.prisma     # 6 domain models + 10 enums
     src/db/client.ts         # PrismaClient singleton
     src/encryption/index.ts  # AES-256-GCM encrypt/decrypt
+    src/queue/index.ts       # BullMQ scan queue + Redis
     src/index.ts             # Barrel export
   apps/web/                  # @repo/web (Next.js admin panel)
-    app/[locale]/admin/      # Admin routes (dashboard, clients, scans, emails, settings)
+    app/[locale]/admin/      # Admin routes (dashboard, clients, debts, certificates, emails, settings)
     app/[locale]/login/      # Login page
     app/api/auth/            # NextAuth + register API routes
-    components/admin/        # Admin components (shared/, clients/, settings/, dashboard/)
+    app/api/scans/           # Scan status polling API
+    components/admin/        # Admin components (shared/, clients/, debts/, emails/, settings/, dashboard/)
     components/ui/           # shadcn/ui components only
     components/auth/         # Login form
+    lib/email/               # Nodemailer + React Email templates
     lib/auth/                # auth.ts, session.ts, rate-limit.ts, totp.ts, audit.ts
     lib/i18n/                # Internationalization (routing, navigation, request)
     lib/general/             # utils.ts, format.ts
-    server_actions/          # Server actions (clients.ts, dashboard.ts, settings.ts)
+    server_actions/          # Server actions (clients.ts, dashboard.ts, scans.ts, emails.ts, settings.ts)
     messages/                # Translation files (el.json, en.json)
-  apps/bot/                  # @repo/bot (Playwright scraper, Phase B)
+  apps/bot/                  # @repo/bot (Playwright scraper)
+    src/workers/             # BullMQ scan worker
+    src/scrapers/            # Base scraper + AADE scraper
+    src/utils/               # Browser pool, credentials, logger
 ```
 
 ### Key Patterns

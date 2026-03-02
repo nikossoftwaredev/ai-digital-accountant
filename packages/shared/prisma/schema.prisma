@@ -170,6 +170,7 @@ model Debt {
   priority    Priority     @default(MEDIUM)
   description String?
   dueDate     DateTime?    @map("due_date")
+  documentUrl String?      @map("document_url")  // PDF or document path
 
   createdAt DateTime @default(now()) @map("created_at")
 

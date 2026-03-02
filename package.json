@@ -7,6 +7,8 @@
     "build": "pnpm --filter @repo/web build",
     "lint": "pnpm --filter @repo/web lint",
     "tsc": "pnpm --filter @repo/web tsc",
+    "bot:dev": "pnpm --filter @repo/bot dev",
+    "bot:start": "pnpm --filter @repo/bot start",
     "db:generate": "pnpm --filter @repo/shared db:generate",
     "db:migrate": "pnpm --filter @repo/shared db:migrate",
     "db:push": "pnpm --filter @repo/shared db:push"

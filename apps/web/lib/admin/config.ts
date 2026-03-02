@@ -1,8 +1,9 @@
 import {
+  FileCheck,
   LayoutDashboard,
   type LucideIcon,
   Mail,
-  ScanLine,
+  Receipt,
   Settings,
   Users,
 } from "lucide-react";
@@ -24,7 +25,8 @@ export const adminNavGroups: AdminNavGroup[] = [
     items: [
       { labelKey: "Admin.nav.dashboard", href: "/admin/dashboard", icon: LayoutDashboard },
       { labelKey: "Admin.nav.clients", href: "/admin/clients", icon: Users },
-      { labelKey: "Admin.nav.scans", href: "/admin/scans", icon: ScanLine },
+      { labelKey: "Admin.nav.debts", href: "/admin/debts", icon: Receipt },
+      { labelKey: "Admin.nav.certificates", href: "/admin/certificates", icon: FileCheck },
     ],
   },
   {

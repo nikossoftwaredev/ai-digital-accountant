@@ -8,7 +8,6 @@ import { toast } from "sonner";
 import { z } from "zod";
 
 import { Button } from "@/components/ui/button";
-import { Spinner } from "@/components/ui/spinner";
 import {
   Card,
   CardContent,
@@ -25,8 +24,9 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { saveSmtpSettings } from "@/server_actions/settings";
+import { Spinner } from "@/components/ui/spinner";
 import type { SettingsData } from "@/server_actions/settings";
+import { saveSmtpSettings } from "@/server_actions/settings";
 
 // ── Schema ───────────────────────────────────────────────────────
 

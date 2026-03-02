@@ -9,7 +9,6 @@ import { toast } from "sonner";
 import { z } from "zod";
 
 import { Button } from "@/components/ui/button";
-import { Spinner } from "@/components/ui/spinner";
 import {
   Card,
   CardContent,
@@ -33,7 +32,9 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { Spinner } from "@/components/ui/spinner";
 import { useRouter } from "@/lib/i18n/navigation";
+import type { SettingsData } from "@/server_actions/settings";
 import {
   changePassword,
   confirmTotp,
@@ -41,7 +42,6 @@ import {
   saveProfileSettings,
   setupTotp,
 } from "@/server_actions/settings";
-import type { SettingsData } from "@/server_actions/settings";
 
 // ── Schemas ──────────────────────────────────────────────────────
 
@@ -189,7 +189,7 @@ export const ProfileSettingsForm = ({ settings }: ProfileSettingsFormProps) => {
       navigator.clipboard.writeText(backupCodes.join("\n"));
       toast.success(t("copied"));
     }
-  }, [backupCodes]);
+  }, [backupCodes, t]);
 
   // Build QR code URL from TOTP URI using Google Charts API
   const qrCodeUrl = totpUri

@@ -1,7 +1,7 @@
 "use server";
 
-import { encrypt, prisma } from "@repo/shared";
 import type { ScanFrequency } from "@repo/shared";
+import { encrypt, prisma } from "@repo/shared";
 import bcrypt from "bcryptjs";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";

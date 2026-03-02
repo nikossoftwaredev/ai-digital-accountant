@@ -8,7 +8,6 @@ import { toast } from "sonner";
 import { z } from "zod";
 
 import { Button } from "@/components/ui/button";
-import { Spinner } from "@/components/ui/spinner";
 import {
   Card,
   CardContent,
@@ -30,9 +29,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Spinner } from "@/components/ui/spinner";
 import { Switch } from "@/components/ui/switch";
-import { saveScanSettings } from "@/server_actions/settings";
 import type { SettingsData } from "@/server_actions/settings";
+import { saveScanSettings } from "@/server_actions/settings";
 
 // ── Schema ───────────────────────────────────────────────────────
 

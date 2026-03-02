@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Spinner } from "@/components/ui/spinner";
 import { useRouter } from "@/lib/i18n/navigation";
 
 type Step = "credentials" | "totp";
@@ -119,9 +120,8 @@ export const LoginForm = () => {
           )}
 
           <Button type="submit" className="w-full" disabled={loading}>
-            {loading && "..."}
-            {!loading && step === "credentials" && t("loginButton")}
-            {!loading && step === "totp" && t("confirm")}
+            {loading && <Spinner />}
+            {!loading && (step === "credentials" ? t("loginButton") : t("confirm"))}
           </Button>
         </form>
       </CardContent>

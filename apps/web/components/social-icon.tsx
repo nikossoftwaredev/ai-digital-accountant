@@ -47,5 +47,5 @@ const SocialIcon = ({
   );
 };
 
-export { SocialIcon, COLOR_CLASSES };
+export { COLOR_CLASSES,SocialIcon };
 export type { SocialIconProps };

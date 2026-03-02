@@ -1,8 +1,8 @@
 "use client";
 
+import { ThemeSwitcher } from "@/components/theme-switcher";
 import { Separator } from "@/components/ui/separator";
 import { SidebarTrigger } from "@/components/ui/sidebar";
-import { ThemeSwitcher } from "@/components/theme-switcher";
 
 export const AdminHeader = () => {
   return (

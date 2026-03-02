@@ -1,0 +1,95 @@
+{
+  "cookies": [
+    {
+      "name": "f5_cspm",
+      "value": "1234",
+      "domain": "login.gsis.gr",
+      "path": "/mylogin",
+      "expires": -1,
+      "httpOnly": false,
+      "secure": false,
+      "sameSite": "Lax"
+    },
+    {
+      "name": "OAMAuthnHintCookie",
+      "value": "0@1772408305",
+      "domain": ".aade.gr",
+      "path": "/",
+      "expires": -1,
+      "httpOnly": true,
+      "secure": true,
+      "sameSite": "None"
+    },
+    {
+      "name": "gsis_cookie",
+      "value": "!+DTqZQyY5eNYOGZ8mIU5RkrmuBpf6Ovtu4Y3ZWSOSGkyib8A3Haxa/yU3wd8Hau0D9yncTjSF5E9ATxTkNOgtN1dHhhcq4UBSlhnukdaVA==",
+      "domain": "www1.aade.gr",
+      "path": "/",
+      "expires": -1,
+      "httpOnly": true,
+      "secure": true,
+      "sameSite": "Lax"
+    },
+    {
+      "name": "OAM_REQ_0",
+      "value": "VERSION_4~kDIkGEFFVQowSwDxrkSPeviK0js3yLLlRBkOnh7Rd2ReMHzm%2biE46lBOCGTERAxT83lRMaCPnm%2f6TiOKkzZFqj0zKGDwCbTgoxD%2fxiqJbQylYZDRet%2bBuQbRZU4XTXA9zlnX%2faSaEJlz4bpbUtkcwv6tsV9Og8cY8pXYe4%2b1iBpRvvAnFUEOuz2fc731zfL5uxZc4CRWbEheyCd70NUdS%2bdzMHYV3EN6I0cSAwxNcv4t0AEEWVCMKmNUgahxpGa3cwrNCNBbrR2jHgrolXBKNq7y3HWjpn19ml5kmtOxZntha8CORcB1WQ75RiafX1Uz6oUH8JBet37mmBIGCtfH%2bGHMkNKUic04dABg9kfGwOQi3H%2bWSBzA%2bBRK6aL41XNAgDXIOnd1lVMQ%2bLG5D8PJFz4YWCaSeUddIypRT1grqY81kK3BoED8axo2y3G6vqlfM%2bJbaUFGlRvxvdajk7mWHO%2fS6FbB80qScamGmOndtiBcwvfKzinLNskqxasnBDgVvNktJSBA3d9hbeYm8RS2Z0C%2bDIE3CV8sja8sy9HDGW2lekislySxxL%2bfm468RcrwN6mY7Eogxc32I%2b3NA0FAHycn0MT86LWmz5D3rMhD7jsOG%2bAP5JPvzowC2kKh%2bWtKhd8X%2b%2bS%2bV0CfuCyXslkhrXZHVG2uS3d5bZcLrzkVYSAnO6MUTmDcEJ818uJRBE4Dl8%2bUZz1Um%2bK0uO0Ub9aehXNS2G%2bQTl0DX6ZzbJWNToNaC%2f3HqdVyqS6UNV%2bvrdqR%2fh8OrTLojn8sE4kKQ%2bkVsBX0gWT5YsE1QetdBV7It6TaSnS9FKZ93MhnZkSo7mo%2fIunrFtOs2J1iefIneCaSEXI%2fW4lmQ5joMRVboy7WGcfNWdaUrygMH4gHjU43B3s2C75d8l7QKSk1KBedkpd%2f3UNPGHRrjzE4sJK2gVpGm%2b5AbMKBsUppWpnQHf68EuasMuJvNN4JXW8Z7pi9fksalcRNUWBtFd4kMlXAQaXMyhfMVf86h19WnNWdFS%2f5FIA%2fY5oGE3EWZ2uGCrzmS5ppro%2fPk271ojE4qm6TeQy8rlbfUzqq6lwA2AXb1riHFjpMvxwsKclyfakgpyTEaGZmMJ1LIZlZiX32pQwkwM3oihdBJbiPWRtnEFy5uFmO3X%2bZjTJg1bB9hbagulaR7pmOzRw3j3ZY4bfi6L0mT%2bAji4AUuVcumSfPcC6kVt9iUxQh1sXhEylzpBHDi54jFg3EeiQQ9BAd51jrdtc7SNFBIDp13%2bL6kSld1yU6Q3aApQRhMuRo51rxVCHZG%2bY3S0XO9%2b4viZojE5tXjzLlHvi8LPf0teeABlT5nzdTpiHA6%2fDGjJ%2fjROqGJP6kDtSj5dpxqiDgUbTILhNGLgVjLlaL%2fdChiQImRZmgqCE9xF85kJvRleZ9GXboi%2f3uK%2bWshbBHvaZcxjsRb9J4hDL7jm2G5FCAqaOdELBI3N9AOfRMo8toNXlLxz%2f27X8LJZDibaSDflW2tLzbo9RY8WIUr%2bRW0Lo%2fKgDeVrexMo609Y8GYfE7%2bBxCKEfQK8fUKIMS1UOve57Q5nLeGlF%2frcclQpB8Ms3P4dgcOQ88Mr0hEzMkD9KNYNZHhNETSrCVYl51dQWi2n%2f3CZmupl%2bDY%2b%2b1jkHIOsBgELZiegPmj73btnrUN1b%2fM6Wxa00scwVxVBuqiaP%2bOxEVplmc8YBf69l07Whb3dKpi9NAWl6lUUO93bhe7xvOpBJif6kjxACeVCEiBAW2PKWq4dttICDq67n7UdiDgCmU714wbGw9OxWd6sRWxEY0Zz4SRDzN9KgP%2fPjfm1zAtQ%2b8V4jwaIbLJ%2fTz%2fMLL53Q%3d",
+      "domain": "login.gsis.gr",
+      "path": "/",
+      "expires": -1,
+      "httpOnly": true,
+      "secure": true,
+      "sameSite": "None"
+    },
+    {
+      "name": "OAM_REQ_COUNT",
+      "value": "VERSION_4~1",
+      "domain": "login.gsis.gr",
+      "path": "/",
+      "expires": -1,
+      "httpOnly": true,
+      "secure": true,
+      "sameSite": "None"
+    },
+    {
+      "name": "ECID-Context",
+      "value": "1.006IzvrR1AADOdI_ypG7yW0001^2000GZl@kXhgv0ZGZKSULGSPXKTPJHSRo4USpLO",
+      "domain": "login.gsis.gr",
+      "path": "/",
+      "expires": -1,
+      "httpOnly": true,
+      "secure": true,
+      "sameSite": "None"
+    },
+    {
+      "name": "gsis_cookie",
+      "value": "!i43hiI/fd1F1QBVeJNcaYNlIfmjX/XT5uoz2JLDqZc36jk9VgOP/p/S7gvCNQ5Yqdq+K9h776l9BtEoL+jHjzSW1YUiLwkNFUwTk8cyOaw==",
+      "domain": "login.gsis.gr",
+      "path": "/",
+      "expires": -1,
+      "httpOnly": true,
+      "secure": true,
+      "sameSite": "Lax"
+    },
+    {
+      "name": "OAM_JSESSIONID",
+      "value": "1G1cpkNRpwm7yplYQRY6wTVlf8zQ3hDH3WZ9ZY593JhFjx8mLMjT!796483687",
+      "domain": "login.gsis.gr",
+      "path": "/",
+      "expires": -1,
+      "httpOnly": true,
+      "secure": false,
+      "sameSite": "Lax"
+    },
+    {
+      "name": "f5avr1626511071aaaaaaaaaaaaaaaa_cspm_",
+      "value": "NBBCFIFHLMMIFHEPKNEFPENCDFNCELBOFDHEPOFODHFFMNKEDAKDIKJLIOOPNMLAIGECDCKKBPNCMNNMHBKAKMKKAJKGDINGLOJHFJMOPBMPDAMCBKEALHFJHGPCOLGD",
+      "domain": "login.gsis.gr",
+      "path": "/",
+      "expires": -1,
+      "httpOnly": false,
+      "secure": false,
+      "sameSite": "Lax"
+    }
+  ],
+  "origins": []
+}

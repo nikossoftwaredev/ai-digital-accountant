@@ -114,11 +114,11 @@ export const ClientsTable = ({ clients }: ClientsTableProps) => {
                         <Pencil className="size-4" />
                         {t("edit")}
                       </DropdownMenuItem>
-                      <DropdownMenuItem disabled>
+                      <DropdownMenuItem onClick={() => router.push(`/admin/debts?clientId=${client.id}`)}>
                         <Scan className="size-4" />
                         {t("scan")}
                       </DropdownMenuItem>
-                      <DropdownMenuItem disabled>
+                      <DropdownMenuItem onClick={() => router.push(`/admin/emails?clientId=${client.id}`)}>
                         <Mail className="size-4" />
                         {t("sendEmail")}
                       </DropdownMenuItem>
