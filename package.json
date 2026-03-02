@@ -12,5 +12,13 @@
     "db:generate": "pnpm --filter @repo/shared db:generate",
     "db:migrate": "pnpm --filter @repo/shared db:migrate",
     "db:push": "pnpm --filter @repo/shared db:push"
+  },
+  "devDependencies": {
+    "puppeteer": "^24.37.5"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "puppeteer"
+    ]
   }
 }

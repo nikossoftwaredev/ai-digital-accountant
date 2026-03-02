@@ -13,12 +13,17 @@ import { useRouter } from "@/lib/i18n/navigation";
 
 type Step = "credentials" | "totp";
 
-export const LoginForm = () => {
+interface LoginFormProps {
+  defaultEmail?: string;
+  defaultPassword?: string;
+}
+
+export const LoginForm = ({ defaultEmail, defaultPassword }: LoginFormProps) => {
   const t = useTranslations("Auth");
   const router = useRouter();
   const [step, setStep] = useState<Step>("credentials");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [email, setEmail] = useState(defaultEmail ?? "");
+  const [password, setPassword] = useState(defaultPassword ?? "");
   const [totpCode, setTotpCode] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);

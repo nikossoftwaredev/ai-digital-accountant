@@ -60,9 +60,12 @@ export const ScanProgressCard = ({
   const isMountedRef = useRef(true);
   const onCompleteRef = useRef(onComplete);
   const scanStatusRef = useRef<string | null>(null);
+  const queuedSinceRef = useRef<number | null>(null);
 
   // Keep refs in sync without triggering re-renders
   onCompleteRef.current = onComplete;
+
+  const QUEUED_TIMEOUT_MS = 60_000; // 60s — fail if bot never picks it up
 
   const fetchStatus = useCallback(async () => {
     try {
@@ -71,6 +74,20 @@ export const ScanProgressCard = ({
 
       const data = await res.json();
       if (!isMountedRef.current) return;
+
+      // Track how long we've been stuck in QUEUED
+      if (data.scan.status === "QUEUED") {
+        if (!queuedSinceRef.current) queuedSinceRef.current = Date.now();
+        if (Date.now() - queuedSinceRef.current > QUEUED_TIMEOUT_MS) {
+          const failedScan = { ...data.scan, status: "FAILED" as const, errorMessage: "Bot is not running — scan was not picked up. Start the bot and try again." };
+          setScan(failedScan);
+          scanStatusRef.current = "FAILED";
+          onCompleteRef.current?.(failedScan, []);
+          return;
+        }
+      } else {
+        queuedSinceRef.current = null;
+      }
 
       setScan(data.scan);
       setDebts(data.debts);

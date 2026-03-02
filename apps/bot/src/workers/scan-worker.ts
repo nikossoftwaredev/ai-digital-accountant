@@ -7,10 +7,12 @@ import {
 } from "@repo/shared";
 import { createBrowserContext, closeBrowserContext } from "../utils/browser";
 import { getClientCredentials } from "../utils/credentials";
+import { uploadFileToStorage } from "../utils/storage";
 import { AADEScraper } from "../scrapers/aade";
 import { EFKAScraper } from "../scrapers/efka";
 import { VehicleTaxScraper } from "../scrapers/vehicle-tax";
 import type { BaseScraper, ScrapeResult } from "../scrapers/base-scraper";
+import type { ScrapedFile } from "../ai";
 import { logger } from "../utils/logger";
 
 // ── Platform → Scraper Mapping ────────────────────────────────────
@@ -22,6 +24,46 @@ const SCRAPER_MAP: Record<
   AADE: AADEScraper,
   EFKA: EFKAScraper,
   MUNICIPALITY: VehicleTaxScraper,
+};
+
+// ── Upload files and create DebtFile records ──────────────────────
+
+const uploadAndLinkFiles = async (
+  files: ScrapedFile[],
+  debtIds: string[],
+  clientId: string,
+  scanId: string
+) => {
+  if (files.length === 0 || debtIds.length === 0) return;
+
+  const log = logger.child({ module: "file-upload", clientId, scanId });
+
+  for (const file of files) {
+    try {
+      const uploaded = await uploadFileToStorage(
+        file.buffer,
+        clientId,
+        scanId,
+        file.fileName,
+        file.contentType
+      );
+
+      // Link file to all debts from this platform's scrape
+      await prisma.debtFile.createMany({
+        data: debtIds.map((debtId) => ({
+          debtId,
+          fileName: uploaded.fileName,
+          fileUrl: uploaded.fileUrl,
+          fileType: uploaded.fileType,
+        })),
+      });
+
+      log.info({ fileName: uploaded.fileName, linkedDebts: debtIds.length }, "File uploaded and linked");
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      log.warn({ fileName: file.fileName, error: message }, "File upload failed, continuing");
+    }
+  }
 };
 
 // ── Process a single scan job ─────────────────────────────────────
@@ -79,21 +121,33 @@ const processScanJob = async (job: Job<ScanJobPayload>) => {
       const result = await scraper.run();
       platformResults.push({ platform, result });
 
-      // Save debts to DB
+      // Save debts to DB and upload files
       if (result.debts.length > 0) {
-        await prisma.debt.createMany({
-          data: result.debts.map((d) => ({
-            clientId,
-            scanId,
-            category: d.category,
-            amount: d.amount,
-            platform: d.platform,
-            priority: d.priority,
-            description: d.description,
-            dueDate: d.dueDate,
-            documentUrl: d.documentUrl ?? null,
-          })),
-        });
+        // Create debts individually to get IDs back for file linking
+        const createdDebts = await Promise.all(
+          result.debts.map((d) =>
+            prisma.debt.create({
+              data: {
+                clientId,
+                scanId,
+                category: d.category,
+                amount: d.amount,
+                platform: d.platform,
+                priority: d.priority,
+                description: d.description,
+                dueDate: d.dueDate,
+                documentUrl: d.documentUrl ?? null,
+                rfCode: d.rfCode ?? null,
+                wireCode: d.wireCode ?? null,
+              },
+            })
+          )
+        );
+
+        const debtIds = createdDebts.map((d) => d.id);
+
+        // Upload files to Supabase Storage and create DebtFile records
+        await uploadAndLinkFiles(result.files, debtIds, clientId, scanId);
       }
 
       // Update platform status in JSON

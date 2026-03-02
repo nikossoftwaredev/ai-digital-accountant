@@ -1,6 +1,10 @@
-import { existsSync, mkdirSync } from "fs";
-import { resolve } from "path";
 import type { Platform } from "@repo/shared";
+import {
+  extractDebtsFromPdf,
+  captureScreenshotFile,
+  mapAIDebtToScrapedDebt,
+  type ScrapedFile,
+} from "../ai";
 import { BaseScraper, type ScrapedDebt } from "./base-scraper";
 import { logger } from "../utils/logger";
 
@@ -13,12 +17,11 @@ import { logger } from "../utils/logger";
 //   4. Click "Τέλη Κυκλοφορίας Οχημάτων"
 //   5. Click "Ειδοποιητήρια Τελών Κυκλοφορίας Οχημάτων"
 //   6. Click "Ειδοποιητήριο Τελών Κυκλοφορίας" → downloads PDF
-//   7. Save PDF locally for the user
+//   7. Read PDF into buffer → AI extracts amounts
+//   8. Return debts + PDF file buffer (uploaded to Supabase by scan-worker)
 
 const VEHICLE_TAX_ENTRY_URL =
   "https://www.gov.gr/arxes/anexartete-arkhe-demosion-esodon-aade/anexartete-arkhe-demosion-esodon-aade/tele-kuklophorias";
-
-const DOWNLOADS_DIR = resolve(process.cwd(), "..", "..", "data", "downloads");
 
 export class VehicleTaxScraper extends BaseScraper {
   readonly platform: Platform = "MUNICIPALITY";
@@ -64,9 +67,10 @@ export class VehicleTaxScraper extends BaseScraper {
     log.info("Logged into vehicle tax portal");
   };
 
-  protected extractDebts = async (): Promise<ScrapedDebt[]> => {
+  protected extractDebts = async (): Promise<{ debts: ScrapedDebt[]; files: ScrapedFile[] }> => {
     if (!this.page) throw new Error("No page available");
     const log = logger.child({ scraper: this.name });
+    const files: ScrapedFile[] = [];
 
     // Step 5: Click "Τέλη Κυκλοφορίας Οχημάτων"
     const vehicleTaxLink = this.page.getByText("ΤέληΚυκλοφορίας Οχημάτων");
@@ -84,6 +88,9 @@ export class VehicleTaxScraper extends BaseScraper {
     log.info("Clicked Ειδοποιητήρια Τελών Κυκλοφορίας Οχημάτων");
     await this.page.waitForTimeout(3_000);
 
+    // Capture screenshot before download
+    files.push(await captureScreenshotFile(this.page, "vehicle-tax-page"));
+
     // Step 7: Click the download button — triggers PDF download
     const downloadButton = this.page.getByRole("button", {
       name: "Ειδοποιητήριο Τελών Κυκλοφορίας",
@@ -91,7 +98,6 @@ export class VehicleTaxScraper extends BaseScraper {
     await downloadButton.waitFor({ state: "visible", timeout: 15_000 });
 
     // Set up download + popup listeners before clicking
-    // The button opens both a popup (new tab) and triggers a download
     const popupPromise = this.page.waitForEvent("popup", { timeout: 30_000 }).catch(() => null);
     const [download] = await Promise.all([
       this.page.waitForEvent("download", { timeout: 30_000 }),
@@ -107,37 +113,79 @@ export class VehicleTaxScraper extends BaseScraper {
       log.info("Closed popup tab");
     }
 
-    // Ensure downloads directory exists
-    if (!existsSync(DOWNLOADS_DIR)) {
-      mkdirSync(DOWNLOADS_DIR, { recursive: true });
+    // Read download into buffer (no local filesystem save)
+    const suggestedName = download.suggestedFilename() || "vehicle-tax.pdf";
+    const stream = await download.createReadStream();
+    if (!stream) {
+      log.warn("Could not read download stream");
+      return { debts: [], files };
     }
 
-    // Save with structured filename: vehicle-tax_<clientAfm>_<timestamp>.pdf
+    const chunks: Buffer[] = [];
+    for await (const chunk of stream) {
+      chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+    }
+    const pdfBuffer = Buffer.concat(chunks);
+
     const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
-    const suggestedName = download.suggestedFilename() || "vehicle-tax.pdf";
-    const ext = suggestedName.endsWith(".pdf") ? "" : ".pdf";
-    const filename = `vehicle-tax_${this.credentials.username}_${timestamp}${ext}`;
-    const savePath = resolve(DOWNLOADS_DIR, filename);
+    const fileName = `vehicle-tax_${timestamp}_${suggestedName}`;
+    log.info({ fileName, size: pdfBuffer.length }, "PDF downloaded into buffer");
 
-    await download.saveAs(savePath);
-    log.info({ savePath }, "PDF saved");
+    // Add PDF to files for Supabase upload
+    files.push({
+      buffer: pdfBuffer,
+      fileName,
+      contentType: "application/pdf",
+    });
 
-    // Return a single debt entry with the document path
-    // Amount is 0 since we can't parse the PDF — the accountant will see the PDF
-    const debts: ScrapedDebt[] = [
-      {
+    // AI extraction: send PDF to Claude for structured extraction
+    try {
+      const aiResult = await extractDebtsFromPdf(
+        pdfBuffer,
+        "Greek vehicle tax (Τέλη Κυκλοφορίας) notification document. Extract the total amount owed, vehicle plate numbers in description, and any RF payment codes."
+      );
+
+      const debts = aiResult.debts.map((d) => ({
+        ...mapAIDebtToScrapedDebt(d, "MUNICIPALITY"),
+        category: "VEHICLE_TAX" as const,
+      }));
+
+      if (debts.length > 0) {
+        log.info({ count: debts.length, totalAmount: aiResult.totalAmount }, "AI extracted vehicle tax debts from PDF");
+        return { debts, files };
+      }
+
+      // AI found no individual entries but may have a total
+      if (aiResult.totalAmount > 0) {
+        log.info({ totalAmount: aiResult.totalAmount }, "AI found total amount but no individual debts");
+        return {
+          debts: [{
+            category: "VEHICLE_TAX",
+            amount: aiResult.totalAmount,
+            platform: "MUNICIPALITY",
+            priority: aiResult.totalAmount > 5000 ? "HIGH" : aiResult.totalAmount > 1000 ? "MEDIUM" : "LOW",
+            description: `Ειδοποιητήριο Τελών Κυκλοφορίας — ${suggestedName}`,
+            dueDate: null,
+          }],
+          files,
+        };
+      }
+    } catch (error) {
+      log.warn({ error }, "AI PDF extraction failed, falling back to amount=0");
+    }
+
+    // Fallback: return with amount=0
+    return {
+      debts: [{
         category: "VEHICLE_TAX",
         amount: 0,
         platform: "MUNICIPALITY",
         priority: "LOW",
         description: `Ειδοποιητήριο Τελών Κυκλοφορίας — ${suggestedName}`,
         dueDate: null,
-        documentUrl: `/api/downloads/${filename}`,
-      },
-    ];
-
-    log.info("Vehicle tax PDF debt record created");
-    return debts;
+      }],
+      files,
+    };
   };
 
   protected logout = async (): Promise<void> => {

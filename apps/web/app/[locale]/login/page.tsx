@@ -17,7 +17,10 @@ const LoginPage = async ({ params }: BasePageProps) => {
 
   return (
     <div className="flex min-h-svh items-center justify-center bg-background">
-      <LoginForm />
+      <LoginForm
+        defaultEmail={process.env.DEV_LOGIN_EMAIL}
+        defaultPassword={process.env.DEV_LOGIN_PASSWORD}
+      />
     </div>
   );
 };

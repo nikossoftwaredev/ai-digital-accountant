@@ -1,15 +1,21 @@
 import type { Platform } from "@repo/shared";
+import {
+  extractDebtsFromScreenshot,
+  downloadAndAnalyzeDocuments,
+  captureScreenshotFile,
+  mapAIDebtToScrapedDebt,
+  type ScrapedFile,
+} from "../ai";
 import { BaseScraper, type ScrapedDebt } from "./base-scraper";
 import { logger } from "../utils/logger";
 
 // ── AADE / TaxisNet Scraper ───────────────────────────────────────
 //
-// This scraper logs into the AADE (Ανεξάρτητη Αρχή Δημοσίων Εσόδων)
-// portal via TaxisNet credentials and extracts debt information.
+// Two-phase AI extraction:
+//   Phase 1: Screenshot → Claude identifies debts + downloadable documents
+//   Phase 2: Playwright downloads identified docs → Claude reads PDFs → enriches data
 //
-// NOTE: Exact selectors will need to be refined against the real
-// AADE site. This implementation provides the structural framework
-// with placeholder selectors that must be updated during live testing.
+// NOTE: Login selectors are still placeholders — update during live testing.
 
 const AADE_LOGIN_URL = "https://www1.aade.gr/taxisnet/";
 const AADE_DEBTS_URL =
@@ -61,53 +67,52 @@ export class AADEScraper extends BaseScraper {
     log.info("AADE login successful");
   };
 
-  protected extractDebts = async (): Promise<ScrapedDebt[]> => {
+  protected extractDebts = async (): Promise<{ debts: ScrapedDebt[]; files: ScrapedFile[] }> => {
     if (!this.page) throw new Error("No page available");
     const log = logger.child({ scraper: this.name });
+    const files: ScrapedFile[] = [];
 
     await this.page.goto(AADE_DEBTS_URL, { waitUntil: "networkidle" });
+    await this.page.waitForTimeout(3_000);
 
-    // NOTE: These selectors are placeholders — update after inspecting the real debts page
-    const rows = await this.page.$$("table tbody tr, .debt-row");
+    // Phase 1: Screenshot → AI identifies debts + downloadable documents
+    const screenshot = await this.page.screenshot({ fullPage: true });
+    log.info("Screenshot captured for AI analysis");
 
-    if (rows.length === 0) {
-      log.info("No debt rows found");
-      return [];
-    }
+    // Save screenshot as a file
+    files.push(await captureScreenshotFile(this.page, "aade-debts"));
 
-    const debts: ScrapedDebt[] = [];
+    const aiResult = await extractDebtsFromScreenshot(
+      screenshot,
+      "AADE (Greek Tax Authority / ΑΑΔΕ) debts page. This shows tax debts including: VAT (ΦΠΑ), income tax (φόρος εισοδήματος), ENFIA property tax, professional tax (τέλος επιτηδεύματος), certified debts (βεβαιωμένες οφειλές). Extract all visible debt entries with amounts and categories. Also identify any clickable PDF downloads or document links."
+    );
 
-    for (const row of rows) {
-      try {
-        const cells = await row.$$("td");
-        if (cells.length < 3) continue;
+    let debts = aiResult.debts.map((d) => mapAIDebtToScrapedDebt(d, "AADE"));
+    log.info(
+      { count: debts.length, totalAmount: aiResult.totalAmount, documents: aiResult.downloadableDocuments.length },
+      "Phase 1: AI page analysis complete"
+    );
 
-        const descriptionText =
-          (await cells[0]?.textContent())?.trim() ?? "";
-        const amountText =
-          (await cells[1]?.textContent())?.trim() ?? "0";
+    // Phase 2: Download identified documents → AI reads them → enrich
+    if (aiResult.downloadableDocuments.length > 0) {
+      const { enrichedDebts, files: docFiles } = await downloadAndAnalyzeDocuments(
+        this.page,
+        aiResult.downloadableDocuments,
+        "AADE (Greek Tax Authority) document"
+      );
 
-        // Parse Greek-formatted amount: "1.234,56" → 1234.56
-        const amount = parseGreekAmount(amountText);
-        if (amount <= 0) continue;
+      files.push(...docFiles);
 
-        const category = classifyDebtCategory(descriptionText);
-
-        debts.push({
-          category,
-          amount,
-          platform: "AADE",
-          priority: amount > 5000 ? "HIGH" : amount > 1000 ? "MEDIUM" : "LOW",
-          description: descriptionText || null,
-          dueDate: null,
-        });
-      } catch (error) {
-        log.warn({ error }, "Failed to parse debt row");
+      // Merge enriched debts (from PDFs) with existing debts
+      if (enrichedDebts.length > 0) {
+        const pdfDebts = enrichedDebts.map((d) => mapAIDebtToScrapedDebt(d, "AADE"));
+        debts = mergeDebts(debts, pdfDebts);
+        log.info({ enrichedCount: pdfDebts.length }, "Phase 2: PDF debts merged");
       }
     }
 
-    log.info({ count: debts.length }, "Debts extracted from AADE");
-    return debts;
+    log.info({ totalDebts: debts.length, totalFiles: files.length }, "AADE extraction complete");
+    return { debts, files };
   };
 
   protected logout = async (): Promise<void> => {
@@ -122,36 +127,15 @@ export class AADEScraper extends BaseScraper {
   };
 }
 
-// ── Helpers ───────────────────────────────────────────────────────
+/** Merge debts from page screenshot and PDF analysis, avoiding duplicates by description+amount */
+function mergeDebts(pageDebts: ScrapedDebt[], pdfDebts: ScrapedDebt[]): ScrapedDebt[] {
+  const existing = new Set(
+    pageDebts.map((d) => `${d.amount}|${d.category}`)
+  );
 
-const parseGreekAmount = (text: string): number => {
-  // Remove currency symbols and whitespace
-  const cleaned = text.replace(/[€\s]/g, "");
-  // Greek format: 1.234,56 → 1234.56
-  const normalized = cleaned.replace(/\./g, "").replace(",", ".");
-  const amount = parseFloat(normalized);
-  return isNaN(amount) ? 0 : amount;
-};
+  const newDebts = pdfDebts.filter(
+    (d) => !existing.has(`${d.amount}|${d.category}`)
+  );
 
-const classifyDebtCategory = (
-  description: string
-): ScrapedDebt["category"] => {
-  const lower = description.toLowerCase();
-
-  if (lower.includes("φπα") || lower.includes("vat")) return "VAT";
-  if (lower.includes("εφκα") || lower.includes("ασφαλιστικ"))
-    return "EFKA";
-  if (lower.includes("φόρος εισοδήματος") || lower.includes("εισόδημα"))
-    return "INCOME_TAX";
-  if (lower.includes("ενφια") || lower.includes("ακίνητ")) return "ENFIA";
-  if (lower.includes("τέλη κυκλοφορίας") || lower.includes("κυκλοφορ"))
-    return "VEHICLE_TAX";
-  if (lower.includes("γεμη") || lower.includes("gemi")) return "GEMI";
-  if (lower.includes("επιτήδευμα") || lower.includes("επαγγελματικ"))
-    return "PROFESSIONAL_TAX";
-  if (lower.includes("προκαταβολ")) return "TAX_PREPAYMENT";
-  if (lower.includes("δημοτικ") || lower.includes("τέλη δήμου"))
-    return "MUNICIPAL_TAX";
-
-  return "CERTIFIED_DEBTS";
-};
+  return [...pageDebts, ...newDebts];
+}

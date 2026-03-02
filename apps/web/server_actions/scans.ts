@@ -62,6 +62,47 @@ export type ScanStatusResult = {
   debts: ScanDebtRow[];
 };
 
+export type DebtFileRow = {
+  id: string;
+  fileName: string;
+  fileUrl: string;
+  fileType: string;
+};
+
+export type DebtDetailRow = {
+  id: string;
+  category: string;
+  amount: number;
+  platform: string;
+  priority: string;
+  description: string | null;
+  dueDate: string | null;
+  rfCode: string | null;
+  wireCode: string | null;
+  documentUrl: string | null;
+  files: DebtFileRow[];
+};
+
+export type PlatformDebtGroup = {
+  platform: string;
+  subtotal: number;
+  fileCount: number;
+  debts: DebtDetailRow[];
+};
+
+export type ClientDebtSummaryData = {
+  scanId: string;
+  scanDate: string;
+  total: number;
+  groups: PlatformDebtGroup[];
+};
+
+export type ScanDateOption = {
+  scanId: string;
+  date: string;
+  totalDebts: number;
+};
+
 // ── startScan ────────────────────────────────────────────────────
 
 export const startScan = async (
@@ -317,5 +358,108 @@ export const getClientDebts = async (
     description: d.description,
     dueDate: d.dueDate?.toISOString() ?? null,
     documentUrl: d.documentUrl ?? null,
+  }));
+};
+
+// ── getClientDebtSummary ─────────────────────────────────────────
+
+export const getClientDebtSummary = async (
+  clientId: string,
+  scanId?: string
+): Promise<ClientDebtSummaryData | null> => {
+  const accountantId = await getAccountantId();
+
+  // Verify ownership
+  const client = await prisma.client.findFirst({
+    where: { id: clientId, accountantId },
+    select: { id: true },
+  });
+  if (!client) return null;
+
+  // Find target scan
+  const scan = scanId
+    ? await prisma.scan.findFirst({
+        where: { id: scanId, clientId, accountantId, status: "COMPLETED" },
+        select: { id: true, completedAt: true },
+      })
+    : await prisma.scan.findFirst({
+        where: { clientId, accountantId, status: "COMPLETED" },
+        orderBy: { completedAt: "desc" },
+        select: { id: true, completedAt: true },
+      });
+
+  if (!scan) return null;
+
+  // Fetch debts with files
+  const debts = await prisma.debt.findMany({
+    where: { scanId: scan.id },
+    orderBy: { amount: "desc" },
+    include: { files: true },
+  });
+
+  // Group by platform
+  const platformMap = new Map<string, DebtDetailRow[]>();
+  for (const d of debts) {
+    const rows = platformMap.get(d.platform) ?? [];
+    rows.push({
+      id: d.id,
+      category: d.category,
+      amount: Number(d.amount),
+      platform: d.platform,
+      priority: d.priority,
+      description: d.description,
+      dueDate: d.dueDate?.toISOString() ?? null,
+      rfCode: d.rfCode ?? null,
+      wireCode: d.wireCode ?? null,
+      documentUrl: d.documentUrl ?? null,
+      files: d.files.map((f) => ({
+        id: f.id,
+        fileName: f.fileName,
+        fileUrl: f.fileUrl,
+        fileType: f.fileType,
+      })),
+    });
+    platformMap.set(d.platform, rows);
+  }
+
+  // Build groups with subtotals
+  const groups: PlatformDebtGroup[] = [];
+  for (const [platform, platformDebts] of platformMap) {
+    const subtotal = platformDebts.reduce((sum, d) => sum + d.amount, 0);
+    const fileCount = platformDebts.reduce(
+      (sum, d) => sum + d.files.length + (d.documentUrl ? 1 : 0),
+      0
+    );
+    groups.push({ platform, subtotal, fileCount, debts: platformDebts });
+  }
+
+  const total = groups.reduce((sum, g) => sum + g.subtotal, 0);
+
+  return {
+    scanId: scan.id,
+    scanDate: scan.completedAt?.toISOString() ?? new Date().toISOString(),
+    total,
+    groups,
+  };
+};
+
+// ── getClientScanDates ───────────────────────────────────────────
+
+export const getClientScanDates = async (
+  clientId: string
+): Promise<ScanDateOption[]> => {
+  const accountantId = await getAccountantId();
+
+  const scans = await prisma.scan.findMany({
+    where: { clientId, accountantId, status: "COMPLETED" },
+    orderBy: { completedAt: "desc" },
+    take: 20,
+    select: { id: true, completedAt: true, totalDebtsFound: true },
+  });
+
+  return scans.map((s) => ({
+    scanId: s.id,
+    date: s.completedAt?.toISOString() ?? s.id,
+    totalDebts: Number(s.totalDebtsFound),
   }));
 };

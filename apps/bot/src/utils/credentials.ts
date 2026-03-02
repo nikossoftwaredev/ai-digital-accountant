@@ -5,6 +5,8 @@ export interface ClientCredentials {
   username: string;
   password: string;
   amka: string | null;
+  hasExistingRfCode: boolean;
+  clientLastName: string;
 }
 
 export const getClientCredentials = async (
@@ -16,6 +18,12 @@ export const getClientCredentials = async (
       taxisnetUsername: true,
       taxisnetPassword: true,
       amka: true,
+      name: true,
+      debts: {
+        where: { rfCode: { not: null } },
+        take: 1,
+        select: { rfCode: true },
+      },
     },
   });
 
@@ -32,5 +40,11 @@ export const getClientCredentials = async (
 
   logger.info({ clientId }, "Credentials decrypted");
 
-  return { username, password, amka: client.amka };
+  return {
+    username,
+    password,
+    amka: client.amka,
+    hasExistingRfCode: client.debts.length > 0,
+    clientLastName: client.name.split(" ").pop() ?? "client",
+  };
 };

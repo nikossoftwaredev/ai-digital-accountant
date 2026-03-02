@@ -5,129 +5,104 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Commands
 
 ### Development
+
 ```bash
-pnpm dev                    # Start Next.js dev server (from apps/web)
-pnpm build                  # Build for production
-pnpm lint                   # Run ESLint
-pnpm tsc --noEmit           # Check TypeScript errors
-npx prisma db push          # Push schema to database (from packages/shared)
-npx prisma generate         # Regenerate Prisma client (from packages/shared)
-npx prisma studio           # Open Prisma Studio (from packages/shared)
+pnpm dev        # Start development server on http://localhost:3000
+pnpm build      # Build for production
+pnpm start      # Start production server
+pnpm lint       # Run ESLint
+pnpm tsc --noEmit  # Check TypeScript errors
 ```
 
 ### Adding UI Components
+
 ```bash
-npx shadcn@latest add <component>  # Run from apps/web/
+npx shadcn@latest add <component>  # Add new shadcn/ui components
 ```
 
 ## Architecture
 
 ### Tech Stack
-- **Next.js 16** with App Router and React Server Components
-- **NextAuth.js 4** with Credentials Provider (email + password + TOTP 2FA)
-- **next-intl** for internationalization (Greek-only, `localePrefix: "never"`)
-- **Prisma** + Supabase PostgreSQL
-- **AES-256-GCM** encryption for stored credentials
-- **Tailwind CSS 4** + **shadcn/ui** (New York style)
+
+- **Next.js 16.1.1** with App Router and React Server Components
+- **NextAuth.js 4.24** for authentication (Google OAuth)
+- **next-intl 4.7.0** for internationalization (en, el locales)
+- **Tailwind CSS 4** with CSS variables and modern color space
+- **shadcn/ui** components (New York style)
 - **TypeScript** with strict mode
 
-### Monorepo Structure
-```
-ai-digital-accountant/
-  pnpm-workspace.yaml
-  packages/shared/           # @repo/shared
-    prisma/schema.prisma     # 6 domain models + 10 enums
-    src/db/client.ts         # PrismaClient singleton
-    src/encryption/index.ts  # AES-256-GCM encrypt/decrypt
-    src/queue/index.ts       # BullMQ scan queue + Redis
-    src/index.ts             # Barrel export
-  apps/web/                  # @repo/web (Next.js admin panel)
-    app/[locale]/admin/      # Admin routes (dashboard, clients, debts, certificates, emails, settings)
-    app/[locale]/login/      # Login page
-    app/api/auth/            # NextAuth + register API routes
-    app/api/scans/           # Scan status polling API
-    components/admin/        # Admin components (shared/, clients/, debts/, emails/, settings/, dashboard/)
-    components/ui/           # shadcn/ui components only
-    components/auth/         # Login form
-    lib/email/               # Nodemailer + React Email templates
-    lib/auth/                # auth.ts, session.ts, rate-limit.ts, totp.ts, audit.ts
-    lib/i18n/                # Internationalization (routing, navigation, request)
-    lib/general/             # utils.ts, format.ts
-    server_actions/          # Server actions (clients.ts, dashboard.ts, scans.ts, emails.ts, settings.ts)
-    messages/                # Translation files (el.json, en.json)
-  apps/bot/                  # @repo/bot (Playwright scraper)
-    src/workers/             # BullMQ scan worker
-    src/scrapers/            # Base scraper + AADE scraper
-    src/utils/               # Browser pool, credentials, logger
-```
+### Project Structure
+
+- `app/[locale]/` - Dynamic locale-based routing
+- `app/api/auth/[...nextauth]/` - NextAuth API routes
+- `components/ui/` - shadcn/ui components
+- `components/auth/` - Authentication components
+- `lib/i18n/` - Internationalization configuration
+- `lib/auth/` - NextAuth configuration
+- `lib/general/` - General utilities (utils.ts)
+- `messages/` - Translation files (en.json, el.json)
+- `proxy.ts` - Middleware for i18n routing (not middleware.ts)
+- `types/` - Shared TypeScript interfaces
 
 ### Key Patterns
 
-#### Imports
-- `import { prisma } from "@repo/shared";` — Prisma client
-- `import { encrypt, decrypt } from "@repo/shared";` — Encryption
-- `import { getAccountantId } from "@/lib/auth/session";` — Auth helper for server actions
-- `import { logAuditEvent } from "@/lib/auth/audit";` — Audit logging
-- `import { Link, useRouter } from "@/lib/i18n/navigation";` — i18n-aware navigation
-- `@/` path alias points to `apps/web/`
-
-#### Server Actions
-- File-level `"use server"` directive
-- Always call `getAccountantId()` for auth
-- Validate with Zod
-- Serialize Prisma Decimal → `Number()`, Date → `.toISOString()`
-- Call `revalidatePath()` after mutations
-- Return `{ success: boolean; error?: string }`
-
 #### Internationalization
-- Greek-only app with `localePrefix: "never"` and `defaultLocale: "el"`
-- All pages receive `params: Promise<{ locale: string }>` (Next.js 16)
-- Server components: `await getTranslations()` + `setRequestLocale(locale)`
-- Client components: `useTranslations("Admin.clients")` etc.
-- Translation keys in `messages/el.json` (primary) and `messages/en.json` (fallback)
-- Type safety derived from `el.json` via `global.d.ts`
+
+- All pages/layouts receive `params: Promise<{ locale: string }>`
+- Server components: Use `await getTranslations()` with `setRequestLocale(locale)`
+- Type-safe translations via `global.d.ts`
+- Navigation helpers in `lib/i18n/navigation.ts` (Link, redirect, useRouter)
 
 #### Component Development
-- Default to Server Components, use `"use client"` only when needed
-- Arrow functions only — no `function` declarations
-- `cn()` from `@/lib/general/utils` for merging Tailwind classes
-- `components/ui/` is reserved for shadcn/ui — custom components go elsewhere
 
-#### Encryption
-- TaxisNet credentials and SMTP password stored as `JSON.stringify(EncryptedPayload)`
-- Each encrypted field carries its own IV and auth tag in the JSON
-- TOTP secret: same pattern, encrypted with `encrypt()` from `@repo/shared`
+- Default to Server Components, use "use client" only when needed
+- Always await params in pages/layouts (Next.js 16 requirement)
+- Use `@/` path alias for imports
+- Utility function `cn()` in `@/lib/general/utils.ts` for merging Tailwind classes
 
-#### Authentication
-- Credentials Provider: email + password + optional TOTP 2FA
-- JWT strategy with 15-minute session
-- Rate limiting: 5 failed attempts → 15-min lockout
-- Audit logging for all auth events
+#### UI & Design Rules
 
-## Database Models
+- **Always use the frontend-design plugin** when working on any design or UI task
+- **Always use shadcn/ui components** — search the web for the correct install command (`npx shadcn@latest add <component>`) and usage patterns before implementing. Do not guess component APIs; look them up.
+- **Always use Lucide icons** (`lucide-react`) — they are the icon set used by shadcn/ui. Search for the right icon name on the web when needed.
+- **`components/ui/` is reserved for shadcn/ui components only** — custom components go in `components/`
+- Use `CircleIcon` (`components/CircleIcon.tsx`) for general icon display with colored circular backgrounds
+- Use `SocialIcon` (`components/social-icon.tsx`) for social media link icons with platform-specific colors
 
-| Model | Purpose |
-|-------|---------|
-| **Accountant** | Admin user (auth, office info, SMTP, scan prefs, 2FA) |
-| **Client** | Accountant's customer (name, AFM, encrypted TaxisNet creds) |
-| **Scan** | Scan execution record (status, platforms, errors) |
-| **Debt** | Individual debt from a scan (category, amount, platform) |
-| **EmailLog** | Sent email tracking |
-| **AuditLog** | Security event log |
+#### Styling
 
-## Environment Variables
+- CSS variables defined in `app/globals.css`
+- Dark mode via `next-themes` with class strategy
+- Custom Tailwind variant: `@custom-variant dark (&:is(.dark *))`
+- Always use semantic color naming (e.g., `text-foreground`, `bg-background`)
 
-```bash
-# Required (apps/web/.env.local)
-NEXTAUTH_SECRET=           # openssl rand -base64 32
-NEXTAUTH_URL=http://localhost:3000
-DATABASE_URL=              # Supabase pooler connection string
-DIRECT_URL=                # Supabase direct connection string
-ENCRYPTION_MASTER_KEY=     # openssl rand -hex 32
+## Authentication Setup
 
-# Phase B (future)
-REDIS_URL=redis://localhost:6379
-```
+### NextAuth Configuration
+
+- **Provider**: Google OAuth configured in `lib/auth/auth.ts`
+- **Session Management**: SessionProvider wraps the app in `components/providers.tsx`
+- **Environment Variables Required**:
+  - `NEXTAUTH_SECRET`: Secret key for JWT encryption
+  - `NEXTAUTH_URL`: Application URL (http://localhost:3000 for development)
+  - `GOOGLE_CLIENT_ID`: From Google Cloud Console
+  - `GOOGLE_CLIENT_SECRET`: From Google Cloud Console
+
+### Google OAuth Setup
+
+1. Go to [Google Cloud Console](https://console.developers.google.com/apis/credentials)
+2. Create a new OAuth 2.0 Client ID
+3. Set Authorized redirect URIs:
+   - Development: `http://localhost:3000/api/auth/callback/google`
+   - Production: `https://your-domain.com/api/auth/callback/google`
+4. Copy Client ID and Client Secret to `.env.local`
+
+## Important Notes
+
+- **PNPM Required**: This project uses PNPM workspaces
+- **Locale Validation**: Layout validates locale and returns 404 for invalid locales
+- **Static Generation**: Uses `generateStaticParams()` for all locale variants
+- **Prisma Setup**: Connected to Supabase PostgreSQL database with User and Todo models
 
 ## Development Guidelines
 
@@ -136,22 +111,81 @@ All coding rules, style preferences, and best practices are in `tasks/lessons.md
 ## Workflow Orchestration
 
 ### 1. Plan Mode Default
-* Enter plan mode for ANY non-trivial task (3+ steps or architectural decisions)
-* If something goes sideways, STOP and re-plan immediately
+
+- Enter plan mode for ANY non-trivial task (3+ steps or architectural decisions)
+- If something goes sideways, STOP and re-plan immediately - don't keep pushing
+- Use plan mode for verification steps, not just building
+- Write detailed specs upfront to reduce ambiguity
 
 ### 2. Subagent Strategy
-* Use subagents liberally to keep main context window clean
-* One task per subagent for focused execution
+
+- Use subagents liberally to keep main context window clean
+- Offload research, exploration, and parallel analysis to subagents
+- For complex problems, throw more compute at it via subagents
+- One task per subagent for focused execution
 
 ### 3. Self-Improvement Loop
-* After ANY correction: update `tasks/lessons.md` with the pattern
+
+- After ANY correction from the user: update `tasks/lessons.md` with the pattern
+- Write rules for yourself that prevent the same mistake
+- Ruthlessly iterate on these lessons until mistake rate drops
+- Review lessons at session start for relevant project
 
 ### 4. Verification Before Done
-* Never mark a task complete without proving it works
-* Run `pnpm tsc --noEmit` and `pnpm lint` before committing
+
+- Never mark a task complete without proving it works
+- Diff behavior between main and your changes when relevant
+- Ask yourself: "Would a staff engineer approve this?"
+- Run tests, check logs, demonstrate correctness
+
+### 5. Demand Elegance (Balanced)
+
+- For non-trivial changes: pause and ask "is there a more elegant way?"
+- If a fix feels hacky: "Knowing everything I know now, implement the elegant solution"
+- Skip this for simple, obvious fixes - don't over-engineer
+- Challenge your own work before presenting it
+
+### 6. Autonomous Bug Fixing
+
+- When given a bug report: just fix it. Don't ask for hand-holding
+- Point at logs, errors, failing tests - then resolve them
+- Zero context switching required from the user
+- Go fix failing CI tests without being told how
+
+## Task Management
+
+1. **Plan First**: Write plan to `tasks/todo.md` with checkable items
+2. **Verify Plan**: Check in before starting implementation
+3. **Track Progress**: Mark items complete as you go
+4. **Explain Changes**: High-level summary at each step
+5. **Document Results**: Add review section to `tasks/todo.md`
+6. **Capture Lessons**: Update `tasks/lessons.md` after corrections
 
 ## Core Principles
 
-* **Simplicity First**: Make every change as simple as possible
-* **No Laziness**: Find root causes. No temporary fixes
-* **Minimal Impact**: Changes should only touch what's necessary
+- **Simplicity First**: Make every change as simple as possible. Impact minimal code.
+- **No Laziness**: Find root causes. No temporary fixes. Senior developer standards.
+- **Minimal Impact**: Changes should only touch what's necessary. Avoid introducing bugs.
+
+## Screenshot Workflow
+
+- Puppeteer is installed as a devDependency with bundled Chromium.
+- **Always screenshot from localhost** — ensure `pnpm dev` is running first.
+- Take a screenshot: `node screenshot.mjs http://localhost:3000`
+- Add a path for specific pages: `node screenshot.mjs http://localhost:3000/en/admin`
+- Screenshots save to `screenshots/screenshot-N.png` (auto-incremented, never overwritten).
+- Optional label: `node screenshot.mjs http://localhost:3000 label` → `screenshot-N-label.png`
+- After screenshotting, read the PNG with the Read tool to visually inspect the UI.
+- When comparing against a reference, be specific about differences: spacing, font sizes, colors (hex), alignment, border-radius, shadows.
+
+### Auto-Verification Rule
+
+**After each meaningful UI change (a section, component, or layout adjustment), you MUST:**
+
+1. Run `node screenshot.mjs http://localhost:3000/<relevant-path> <label>` to capture the result
+2. Read the PNG with the Read tool and visually inspect it
+3. Check that the change matches what was requested — look for layout issues, broken styling, misalignment, missing elements
+4. If something looks wrong, fix it and screenshot again — repeat until it looks correct
+5. Only then move on to the next change
+
+**Do NOT batch all changes and screenshot once at the end.** Verify incrementally after each section so issues are caught early and fixed in isolation.

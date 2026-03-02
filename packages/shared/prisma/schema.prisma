@@ -170,13 +170,34 @@ model Debt {
   priority    Priority     @default(MEDIUM)
   description String?
   dueDate     DateTime?    @map("due_date")
-  documentUrl String?      @map("document_url")  // PDF or document path
+  documentUrl String?      @map("document_url")  // DEPRECATED: use DebtFile
+  rfCode      String?      @map("rf_code")
+  wireCode    String?      @map("wire_code")
 
+  files     DebtFile[]
   createdAt DateTime @default(now()) @map("created_at")
 
   @@index([scanId])
   @@index([clientId, createdAt(sort: Desc)])
   @@map("debts")
+}
+
+// ═══════════════════════════════════════════
+// DEBT FILE — attachments for a debt record
+// ═══════════════════════════════════════════
+model DebtFile {
+  id       String @id @default(cuid())
+  debtId   String @map("debt_id")
+  debt     Debt   @relation(fields: [debtId], references: [id], onDelete: Cascade)
+
+  fileName String @map("file_name")
+  fileUrl  String @map("file_url")
+  fileType String @default("application/pdf") @map("file_type")
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([debtId])
+  @@map("debt_files")
 }
 
 enum DebtCategory {

@@ -25,6 +25,11 @@ export const adminNavGroups: AdminNavGroup[] = [
     items: [
       { labelKey: "Admin.nav.dashboard", href: "/admin/dashboard", icon: LayoutDashboard },
       { labelKey: "Admin.nav.clients", href: "/admin/clients", icon: Users },
+    ],
+  },
+  {
+    groupKey: "Admin.nav.tools",
+    items: [
       { labelKey: "Admin.nav.debts", href: "/admin/debts", icon: Receipt },
       { labelKey: "Admin.nav.certificates", href: "/admin/certificates", icon: FileCheck },
     ],

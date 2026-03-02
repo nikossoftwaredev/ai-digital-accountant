@@ -1,12 +1,22 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { FileText, Hash, IdCard, KeyRound, Mail, MessageSquare, Phone, User } from "lucide-react";
+import { FileText, Hash, IdCard, KeyRound, Mail, MessageSquare, Phone, User, XIcon } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { useEffect } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -65,6 +75,7 @@ export const ClientFormDialog = ({
   onSuccess,
 }: ClientFormDialogProps) => {
   const t = useTranslations("Admin.clients");
+  const [showDiscardAlert, setShowDiscardAlert] = useState(false);
 
   const form = useForm<ClientFormValues>({
     resolver: zodResolver(clientFormSchema),
@@ -144,13 +155,36 @@ export const ClientFormDialog = ({
 
   const isEdit = mode === "edit";
 
+  /** If form has changes, show confirmation; otherwise close directly */
+  const handleClose = useCallback(() => {
+    if (form.formState.isDirty) {
+      setShowDiscardAlert(true);
+    } else {
+      onOpenChange(false);
+    }
+  }, [form.formState.isDirty, onOpenChange]);
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px]">
+    <>
+    <Dialog open={open} onOpenChange={(value) => { if (!value) handleClose(); }}>
+      <DialogContent
+        className="sm:max-w-[500px]"
+        onInteractOutside={(e) => e.preventDefault()}
+        onEscapeKeyDown={(e) => { e.preventDefault(); handleClose(); }}
+        showCloseButton={false}
+      >
         <DialogHeader>
           <DialogTitle>
             {isEdit ? t("editClient") : t("addClient")}
           </DialogTitle>
+          <button
+            type="button"
+            onClick={handleClose}
+            className="ring-offset-background focus:ring-ring absolute top-4 right-4 rounded-xs opacity-70 transition-opacity hover:opacity-100 focus:ring-2 focus:ring-offset-2 focus:outline-hidden"
+          >
+            <XIcon className="size-4" />
+            <span className="sr-only">Close</span>
+          </button>
         </DialogHeader>
 
         <Form {...form}>
@@ -291,7 +325,7 @@ export const ClientFormDialog = ({
               <Button
                 type="button"
                 variant="outline"
-                onClick={() => onOpenChange(false)}
+                onClick={handleClose}
               >
                 {t("cancel")}
               </Button>
@@ -303,5 +337,27 @@ export const ClientFormDialog = ({
         </Form>
       </DialogContent>
     </Dialog>
+
+    <AlertDialog open={showDiscardAlert} onOpenChange={setShowDiscardAlert}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>{t("discardChangesTitle")}</AlertDialogTitle>
+          <AlertDialogDescription>{t("discardChangesDesc")}</AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>{t("keepEditing")}</AlertDialogCancel>
+          <AlertDialogAction
+            variant="destructive"
+            onClick={() => {
+              setShowDiscardAlert(false);
+              onOpenChange(false);
+            }}
+          >
+            {t("discard")}
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+    </>
   );
 };

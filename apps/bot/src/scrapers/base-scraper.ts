@@ -1,7 +1,9 @@
 import type { BrowserContext, Page } from "playwright";
 import type { Platform, DebtCategory, Priority } from "@repo/shared";
 import type { ClientCredentials } from "../utils/credentials";
+import type { ScrapedFile } from "../ai";
 import { logger } from "../utils/logger";
+import { resetDebugLog, saveDebugMarkdown } from "../utils/debug-log";
 
 // ── Types ─────────────────────────────────────────────────────────
 
@@ -13,11 +15,15 @@ export interface ScrapedDebt {
   description: string | null;
   dueDate: Date | null;
   documentUrl?: string | null;
+  rfCode?: string | null;
+  wireCode?: string | null;
 }
 
 export interface ScrapeResult {
   success: boolean;
   debts: ScrapedDebt[];
+  /** Files collected during scraping (screenshots, PDFs, etc.) to upload to storage */
+  files: ScrapedFile[];
   error?: string;
   errorType?: "LOGIN_FAILED" | "CAPTCHA" | "TIMEOUT" | "UI_CHANGED";
 }
@@ -38,7 +44,7 @@ export abstract class BaseScraper {
   }
 
   protected abstract login(): Promise<void>;
-  protected abstract extractDebts(): Promise<ScrapedDebt[]>;
+  protected abstract extractDebts(): Promise<{ debts: ScrapedDebt[]; files: ScrapedFile[] }>;
   protected abstract logout(): Promise<void>;
 
   private static readonly SCRAPE_TIMEOUT = 120_000;
@@ -58,7 +64,7 @@ export abstract class BaseScraper {
         error instanceof Error ? error.message : "Unknown error";
       log.error({ error: message }, "Scrape failed");
       const errorType = this.classifyError(message);
-      return { success: false, debts: [], error: message, errorType };
+      return { success: false, debts: [], files: [], error: message, errorType };
     } finally {
       if (this.page) {
         await this.page.close().catch(() => {});
@@ -68,14 +74,28 @@ export abstract class BaseScraper {
   };
 
   private doScrape = async (log: typeof logger): Promise<ScrapeResult> => {
+    resetDebugLog();
     this.page = await this.context.newPage();
     log.info("Starting scrape");
+
+    saveDebugMarkdown(this.name, "start", {
+      notes: `Scraper: ${this.name}\nPlatform: ${this.platform}\nStarted: ${new Date().toISOString()}`,
+    });
 
     await this.login();
     log.info("Login successful");
 
-    const debts = await this.extractDebts();
-    log.info({ count: debts.length }, "Debts extracted");
+    saveDebugMarkdown(this.name, "login-success", {
+      notes: "Login completed successfully",
+    });
+
+    const { debts, files } = await this.extractDebts();
+    log.info({ count: debts.length, files: files.length }, "Debts extracted");
+
+    saveDebugMarkdown(this.name, "extraction-complete", {
+      parsedResult: { debts, fileCount: files.length, fileNames: files.map((f) => f.fileName) },
+      notes: `Debts: ${debts.length}\nFiles: ${files.length}\nTotal amount: ${debts.reduce((s, d) => s + d.amount, 0)}`,
+    });
 
     try {
       await this.logout();
@@ -83,7 +103,17 @@ export abstract class BaseScraper {
       log.warn("Logout failed, continuing");
     }
 
-    return { success: true, debts };
+    return { success: true, debts, files };
+  };
+
+  /** Generate a compact filename: PLATFORM_LastName_DD-MM-YY */
+  protected buildFileName = (label: string, ext: string): string => {
+    const now = new Date();
+    const dd = String(now.getDate()).padStart(2, "0");
+    const mm = String(now.getMonth() + 1).padStart(2, "0");
+    const yy = String(now.getFullYear()).slice(-2);
+    const lastName = this.credentials.clientLastName.replace(/\s+/g, "-");
+    return `${this.name}_${lastName}_${label}_${dd}-${mm}-${yy}.${ext}`;
   };
 
   private classifyError = (
