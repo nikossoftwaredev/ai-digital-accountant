@@ -32,6 +32,9 @@ interface DebtsPageClientProps {
   initialClientId?: string;
 }
 
+const ACTIVE_PLATFORMS = ["AADE", "EFKA", "GEMI", "MUNICIPALITY"] as const;
+type ActivePlatform = (typeof ACTIVE_PLATFORMS)[number];
+
 // ── Helpers ──────────────────────────────────────────────────────
 
 const getPlatformFiles = (data: ClientDebtSummaryData | null, platform: string): DebtFileRow[] => {
@@ -62,23 +65,15 @@ export const DebtsPageClient = ({
   const t = useTranslations("Admin.debts");
 
   const [selectedClientId, setSelectedClientId] = useState<string>(initialClientId ?? clients[0]?.id ?? "");
-  const [aadeScanStatus, setAadeScanStatus] = useState<ScanStatus>("idle");
-  const [efkaScanStatus, setEfkaScanStatus] = useState<ScanStatus>("idle");
-  const [gemiScanStatus, setGemiScanStatus] = useState<ScanStatus>("idle");
-  const [municipalityScanStatus, setMunicipalityScanStatus] = useState<ScanStatus>("idle");
+  const [scanStatuses, setScanStatuses] = useState<Record<ActivePlatform, ScanStatus>>({
+    AADE: "idle", EFKA: "idle", GEMI: "idle", MUNICIPALITY: "idle",
+  });
   const [activeScanId, setActiveScanId] = useState<string | null>(null);
   const [recentScans, setRecentScans] = useState(initialScans);
   const [summaryRefreshKey, setSummaryRefreshKey] = useState(0);
   const [summaryData, setSummaryData] = useState<ClientDebtSummaryData | null>(null);
 
   const selectedClient = clients.find((c) => c.id === selectedClientId);
-
-  const statusSetters: Record<string, (s: ScanStatus) => void> = {
-    AADE: setAadeScanStatus,
-    EFKA: setEfkaScanStatus,
-    GEMI: setGemiScanStatus,
-    MUNICIPALITY: setMunicipalityScanStatus,
-  };
 
   // Fetch per-platform summary for cards
   useEffect(() => {
@@ -96,13 +91,13 @@ export const DebtsPageClient = ({
   }, [selectedClientId, summaryRefreshKey]);
 
   const handleScan = useCallback(
-    async (platform: "AADE" | "EFKA" | "GEMI" | "MUNICIPALITY") => {
+    async (platform: ActivePlatform) => {
       if (!selectedClientId) {
         toast.error(t("selectClientFirst"));
         return;
       }
 
-      statusSetters[platform]("scanning");
+      setScanStatuses((prev) => ({ ...prev, [platform]: "scanning" }));
 
       const result = await startScan({
         clientId: selectedClientId,
@@ -110,7 +105,7 @@ export const DebtsPageClient = ({
       });
 
       if (!result.success) {
-        statusSetters[platform]("failed");
+        setScanStatuses((prev) => ({ ...prev, [platform]: "failed" }));
         toast.error(result.error);
         return;
       }
@@ -126,11 +121,15 @@ export const DebtsPageClient = ({
       const statuses = scan.platformStatuses as Array<{ platform: string }> | null;
       const newStatus: ScanStatus = scan.status === "COMPLETED" ? "completed" : "failed";
 
-      for (const [platform, setter] of Object.entries(statusSetters)) {
-        if (statuses?.some((s) => s.platform === platform)) {
-          setter(newStatus);
+      setScanStatuses((prev) => {
+        const next = { ...prev };
+        for (const platform of ACTIVE_PLATFORMS) {
+          if (statuses?.some((s) => s.platform === platform)) {
+            next[platform] = newStatus;
+          }
         }
-      }
+        return next;
+      });
 
       // Add to recent scans and refresh summary
       setRecentScans((prev) => [scan, ...prev.slice(0, 19)]);
@@ -159,54 +158,21 @@ export const DebtsPageClient = ({
 
       {/* Service Cards */}
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-        <DebtServiceCard
-          platform="AADE"
-          title={t("aadeTitle")}
-          description={t("aadeDescription")}
-          lastScanDate={selectedClient?.lastScanAt ?? null}
-          totalDebts={getPlatformSubtotal(summaryData, "AADE")}
-          scanStatus={aadeScanStatus}
-          onScan={() => handleScan("AADE")}
-          onSendEmail={() => handleSendEmail("AADE")}
-          disabled={!selectedClientId}
-          files={getPlatformFiles(summaryData, "AADE")}
-        />
-        <DebtServiceCard
-          platform="EFKA"
-          title={t("efkaTitle")}
-          description={t("efkaDescription")}
-          lastScanDate={selectedClient?.lastScanAt ?? null}
-          totalDebts={getPlatformSubtotal(summaryData, "EFKA")}
-          scanStatus={efkaScanStatus}
-          onScan={() => handleScan("EFKA")}
-          onSendEmail={() => handleSendEmail("EFKA")}
-          disabled={!selectedClientId}
-          files={getPlatformFiles(summaryData, "EFKA")}
-        />
-        <DebtServiceCard
-          platform="GEMI"
-          title={t("gemiTitle")}
-          description={t("gemiDescription")}
-          lastScanDate={selectedClient?.lastScanAt ?? null}
-          totalDebts={getPlatformSubtotal(summaryData, "GEMI")}
-          scanStatus={gemiScanStatus}
-          onScan={() => handleScan("GEMI")}
-          onSendEmail={() => handleSendEmail("GEMI")}
-          disabled={!selectedClientId}
-          files={getPlatformFiles(summaryData, "GEMI")}
-        />
-        <DebtServiceCard
-          platform="MUNICIPALITY"
-          title={t("municipalityTitle")}
-          description={t("municipalityDescription")}
-          lastScanDate={selectedClient?.lastScanAt ?? null}
-          totalDebts={getPlatformSubtotal(summaryData, "MUNICIPALITY")}
-          scanStatus={municipalityScanStatus}
-          onScan={() => handleScan("MUNICIPALITY")}
-          onSendEmail={() => handleSendEmail("MUNICIPALITY")}
-          disabled={!selectedClientId}
-          files={getPlatformFiles(summaryData, "MUNICIPALITY")}
-        />
+        {ACTIVE_PLATFORMS.map((platform) => (
+          <DebtServiceCard
+            key={platform}
+            platform={platform}
+            title={t(`${platform.toLowerCase()}Title`)}
+            description={t(`${platform.toLowerCase()}Description`)}
+            lastScanDate={selectedClient?.lastScanAt ?? null}
+            totalDebts={getPlatformSubtotal(summaryData, platform)}
+            scanStatus={scanStatuses[platform]}
+            onScan={() => handleScan(platform)}
+            onSendEmail={() => handleSendEmail(platform)}
+            disabled={!selectedClientId}
+            files={getPlatformFiles(summaryData, platform)}
+          />
+        ))}
         <DebtServiceCard
           title={t("keaoTitle")}
           description={t("keaoDescription")}
