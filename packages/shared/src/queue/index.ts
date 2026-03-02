@@ -16,9 +16,13 @@ export interface ScanJobPayload {
 // ── Redis Connection Options ──────────────────────────────────────
 
 export const getRedisConnectionOptions = () => {
-  const url = new URL(
-    process.env.REDIS_URL ?? "redis://localhost:6379"
-  );
+  const redisUrl = process.env.REDIS_URL ?? "redis://localhost:6379";
+  const url = new URL(redisUrl);
+
+  if (process.env.NODE_ENV === "production" && !url.password) {
+    console.warn("[SECURITY] Redis has no password set in production — this is unsafe");
+  }
+
   return {
     host: url.hostname,
     port: Number(url.port) || 6379,

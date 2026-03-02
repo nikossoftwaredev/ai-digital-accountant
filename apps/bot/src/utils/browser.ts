@@ -5,6 +5,7 @@ import { logger } from "./logger";
 
 const MAX_CONCURRENT = 3;
 const BROWSER_TIMEOUT = 30_000;
+const HEADLESS = process.env.BROWSER_HEADLESS !== "false"; // headless by default, set BROWSER_HEADLESS=false for debugging
 
 // ── Browser Pool ──────────────────────────────────────────────────
 
@@ -15,7 +16,7 @@ const getBrowser = async (): Promise<Browser> => {
   if (!browser || !browser.isConnected()) {
     logger.info("Launching Chromium browser");
     browser = await chromium.launch({
-      headless: false,
+      headless: HEADLESS,
       args: ["--disable-gpu", "--no-sandbox", "--disable-dev-shm-usage"],
     });
   }
