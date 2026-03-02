@@ -1,5 +1,6 @@
 "use client";
 
+import type { Platform } from "@repo/shared";
 import { AlertCircle, CheckCircle2, Clock, Download, FileText, Mail, Play } from "lucide-react";
 import { useTranslations } from "next-intl";
 
@@ -23,15 +24,15 @@ import type { DebtFileRow } from "@/server_actions/scans";
 
 // ── Types ────────────────────────────────────────────────────────
 
-type ScanStatus = "idle" | "scanning" | "completed" | "failed";
+type CardScanStatus = "idle" | "scanning" | "completed" | "failed";
 
 interface DebtServiceCardProps {
-  platform?: "AADE" | "EFKA" | "GEMI" | "MUNICIPALITY";
+  platform?: Platform;
   title: string;
   description: string;
   lastScanDate?: string | null;
   totalDebts?: number;
-  scanStatus?: ScanStatus;
+  scanStatus?: CardScanStatus;
   onScan?: () => void;
   onSendEmail?: () => void;
   disabled?: boolean;
@@ -41,7 +42,7 @@ interface DebtServiceCardProps {
 
 // ── Status Icon ──────────────────────────────────────────────────
 
-const statusIcons: Record<ScanStatus, React.ReactNode> = {
+const statusIcons: Record<CardScanStatus, React.ReactNode> = {
   idle: <Clock className="size-4 text-muted-foreground" />,
   scanning: <Spinner />,
   completed: <CheckCircle2 className="size-4 text-green-500" />,

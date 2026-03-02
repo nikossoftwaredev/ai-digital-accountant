@@ -93,6 +93,13 @@ Always use typography components from `@/components/ui/typography.tsx`:
 ### Color
 - **Semantic color naming** - Use `text-foreground`, `bg-background`, etc. Never use raw color values.
 
+## Database / Prisma
+
+- **Always use Prisma generated types** for enums and model-related fields. Never hand-write string literal unions like `"SENT" | "FAILED" | "PENDING"` when a Prisma enum exists (e.g., `EmailStatus`, `ClientStatus`, `ScanStatus`, `Platform`, `DebtCategory`, `Priority`, `ErrorType`).
+  - Import from `@repo/shared` which re-exports all Prisma types: `import type { Platform, ClientStatus } from "@repo/shared"`
+  - DTOs that serialize Prisma data for the frontend (Decimal → number, Date → string) are fine as hand-written types, but their enum fields must still reference Prisma enums.
+  - When adding a new column or changing a schema enum, the types automatically propagate through all DTOs.
+
 ## Next.js Patterns
 
 - **Always await params in pages/layouts** - Next.js 16 requirement. `params` is a `Promise<{ locale: string }>`, not a plain object.

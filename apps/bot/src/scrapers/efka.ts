@@ -3,6 +3,7 @@ import type { ScrapedFile } from "../ai";
 import { BaseScraper, type ScrapedDebt } from "./base-scraper";
 import { logger } from "../utils/logger";
 import { saveDebugMarkdown } from "../utils/debug-log";
+import { loginViaTaxisNet } from "../utils/taxisnet-login";
 
 // ── EFKA Scraper ─────────────────────────────────────────────────
 //
@@ -18,8 +19,6 @@ import { saveDebugMarkdown } from "../utils/debug-log";
 //   4. Download PDF via the "Ειδοποιητήριο" button
 //   5. Capture screenshot for debug
 
-const EFKA_ENTRY_URL =
-  "https://www.idika.org.gr/EfkaServices/Account/GsisOAuth2Authenticate.aspx";
 const EFKA_CONTRIBUTIONS_URL =
   "https://www.idika.org.gr/EfkaServices/Application/Contributions.aspx";
 
@@ -44,45 +43,13 @@ export class EFKAScraper extends BaseScraper {
       throw new Error("Client has no AMKA — required for EFKA login");
     }
 
-    // Step 1: Navigate to EFKA entry point
-    await this.page.goto(EFKA_ENTRY_URL, { waitUntil: "domcontentloaded" });
-    await this.page.waitForTimeout(2_000);
-    log.info("Loaded EFKA entry page");
-
-    // Step 2: Dismiss cookie banner if blocking
-    try {
-      const closeBtn = this.page.locator("text=ΚΛΕΙΣΙΜΟ");
-      await closeBtn.click({ timeout: 3_000 });
-      log.info("Dismissed cookie banner");
-    } catch {
-      // No cookie banner
-    }
-
-    // Step 3: Click "ΣΥΝΕΧΕΙΑ ΣΤΟ TAXISNET"
-    await this.page.locator("#ContentPlaceHolder1_btnGGPSAuth").click();
-    log.info("Clicked ΣΥΝΕΧΕΙΑ ΣΤΟ TAXISNET");
-
-    // Step 4: Fill TaxisNet credentials
-    const usernameField = this.page.getByRole("textbox", {
-      name: "Χρήστης:",
+    // Shared TaxisNet OAuth flow (entry → credentials → consent)
+    await loginViaTaxisNet(this.page, {
+      username: this.credentials.username,
+      password: this.credentials.password,
     });
-    await usernameField.waitFor({ state: "visible", timeout: 15_000 });
-    await usernameField.fill(this.credentials.username);
 
-    await this.page
-      .getByRole("textbox", { name: "Κωδικός:" })
-      .fill(this.credentials.password);
-
-    await this.page.getByRole("button", { name: "Σύνδεση" }).click();
-    log.info("Submitted TaxisNet credentials");
-
-    // Step 5: OAuth consent — click "Αποστολή"
-    const consentBtn = this.page.getByRole("button", { name: "Αποστολή" });
-    await consentBtn.waitFor({ state: "visible", timeout: 15_000 });
-    await consentBtn.click();
-    log.info("OAuth consent granted");
-
-    // Step 6: Fill AMKA and enter
+    // EFKA-specific: Fill AMKA and enter
     const amkaField = this.page.getByRole("textbox", { name: "AMKA:" });
     await amkaField.waitFor({ state: "visible", timeout: 15_000 });
     await amkaField.fill(this.credentials.amka);

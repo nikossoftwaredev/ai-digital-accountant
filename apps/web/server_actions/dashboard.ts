@@ -1,6 +1,6 @@
 "use server";
 
-import { prisma } from "@repo/shared";
+import { prisma, type DebtCategory, type Platform } from "@repo/shared";
 
 import { getAccountantId } from "@/lib/auth/session";
 
@@ -16,9 +16,9 @@ export type DashboardStats = {
 export type RecentDebt = {
   id: string;
   clientName: string;
-  category: string;
+  category: DebtCategory;
   amount: number;
-  platform: string;
+  platform: Platform;
   description: string | null;
   dueDate: string | null;
   createdAt: string;

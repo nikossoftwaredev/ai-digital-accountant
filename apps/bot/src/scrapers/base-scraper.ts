@@ -1,5 +1,5 @@
 import type { BrowserContext, Page } from "playwright";
-import type { Platform, DebtCategory, Priority } from "@repo/shared";
+import type { Platform, DebtCategory, Priority, ErrorType } from "@repo/shared";
 import type { ClientCredentials } from "../utils/credentials";
 import type { ScrapedFile } from "../ai";
 import { logger } from "../utils/logger";
@@ -25,7 +25,7 @@ export interface ScrapeResult {
   /** Files collected during scraping (screenshots, PDFs, etc.) to upload to storage */
   files: ScrapedFile[];
   error?: string;
-  errorType?: "LOGIN_FAILED" | "CAPTCHA" | "TIMEOUT" | "UI_CHANGED";
+  errorType?: ErrorType;
 }
 
 // ── Base Scraper ──────────────────────────────────────────────────

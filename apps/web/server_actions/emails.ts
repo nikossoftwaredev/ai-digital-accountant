@@ -1,6 +1,6 @@
 "use server";
 
-import { prisma } from "@repo/shared";
+import { prisma, type EmailStatus } from "@repo/shared";
 import { revalidatePath } from "next/cache";
 
 import { logAuditEvent } from "@/lib/auth/audit";
@@ -19,7 +19,7 @@ export type EmailLogRow = {
   recipientEmail: string;
   subject: string;
   sentAt: string | null;
-  status: "SENT" | "FAILED" | "PENDING";
+  status: EmailStatus;
   errorMessage: string | null;
   createdAt: string;
 };
@@ -127,7 +127,16 @@ export const sendBulkEmails = async (
 
 // ── getClientEmailLogs ──────────────────────────────────────────
 
-export const getClientEmailLogs = async (clientId: string, limit = 20) => {
+export type ClientEmailLogRow = {
+  id: string;
+  recipientEmail: string;
+  subject: string;
+  status: EmailStatus;
+  sentAt: string | null;
+  createdAt: string;
+};
+
+export const getClientEmailLogs = async (clientId: string, limit = 20): Promise<ClientEmailLogRow[]> => {
   const accountantId = await getAccountantId();
 
   const logs = await prisma.emailLog.findMany({

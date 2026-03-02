@@ -7,11 +7,10 @@ import {
 } from "@repo/shared";
 import { createBrowserContext, closeBrowserContext } from "../utils/browser";
 import { logger } from "../utils/logger";
+import { loginViaTaxisNet } from "../utils/taxisnet-login";
 
 // ── EFKA Registry Selectors ──────────────────────────────────────
 
-const EFKA_ENTRY_URL =
-  "https://www.idika.org.gr/EfkaServices/Account/GsisOAuth2Authenticate.aspx";
 const EFKA_REGISTRY_URL =
   "https://www.idika.org.gr/EfkaServices/Application/EfkaRegistry.aspx";
 
@@ -36,42 +35,18 @@ const processLookupJob = async (job: Job<LookupJobPayload>): Promise<LookupJobRe
   const page = await context.newPage();
 
   try {
-    // Step 1: Navigate to EFKA entry
-    await page.goto(EFKA_ENTRY_URL, { waitUntil: "domcontentloaded" });
-    await page.waitForTimeout(2_000);
-
-    // Dismiss cookie banner
-    try {
-      await page.locator("text=ΚΛΕΙΣΙΜΟ").click({ timeout: 3_000 });
-    } catch { /* no banner */ }
-
-    // Step 2: Click ΣΥΝΕΧΕΙΑ ΣΤΟ TAXISNET
-    await page.locator("#ContentPlaceHolder1_btnGGPSAuth").click();
-
-    // Step 3: Fill TaxisNet credentials
-    const usernameField = page.getByRole("textbox", { name: "Χρήστης:" });
-    await usernameField.waitFor({ state: "visible", timeout: 15_000 });
-    await usernameField.fill(taxisnetUsername);
-    await page.getByRole("textbox", { name: "Κωδικός:" }).fill(taxisnetPassword);
-    await page.getByRole("button", { name: "Σύνδεση" }).click();
-    log.info("TaxisNet credentials submitted");
-
-    // Step 4: OAuth consent
-    const consentBtn = page.getByRole("button", { name: "Αποστολή" });
-    await consentBtn.waitFor({ state: "visible", timeout: 15_000 });
-    await consentBtn.click();
-    log.info("OAuth consent granted");
-
-    // Step 5: Wait for page to settle after OAuth
-    await page.waitForLoadState("domcontentloaded");
-    await page.waitForTimeout(3_000);
+    // Shared TaxisNet OAuth flow (entry → credentials → consent)
+    await loginViaTaxisNet(page, {
+      username: taxisnetUsername,
+      password: taxisnetPassword,
+    });
 
     // Navigate directly to Registry
     await page.goto(EFKA_REGISTRY_URL, { waitUntil: "domcontentloaded" });
     await page.waitForTimeout(3_000);
     log.info("Navigated to EFKA Registry");
 
-    // Step 6: Extract data from Registry page
+    // Extract data from Registry page
     const getValue = async (selector: string): Promise<string> => {
       const el = await page.$(selector);
       if (!el) return "";
@@ -96,6 +71,9 @@ const processLookupJob = async (job: Job<LookupJobPayload>): Promise<LookupJobRe
 
     return result;
   } finally {
+    // Clear sensitive credentials from memory
+    job.data.taxisnetUsername = "";
+    job.data.taxisnetPassword = "";
     await page.close().catch(() => {});
     await closeBrowserContext(context);
   }

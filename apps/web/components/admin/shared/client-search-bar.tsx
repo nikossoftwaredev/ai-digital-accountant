@@ -32,8 +32,8 @@ const getAvatarColor = (name: string): string => {
   return colors[Math.abs(hash) % colors.length];
 };
 
-const formatCurrency = (amount: number): string =>
-  new Intl.NumberFormat("el-GR", { style: "currency", currency: "EUR" }).format(amount);
+const currencyFormatter = new Intl.NumberFormat("el-GR", { style: "currency", currency: "EUR" });
+const formatCurrency = (amount: number): string => currencyFormatter.format(amount);
 
 export const ClientSearchBar = ({ clients, selectedClientId, onSelect }: ClientSearchBarProps) => {
   const t = useTranslations("Admin.debts");

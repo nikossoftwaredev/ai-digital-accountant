@@ -1,6 +1,7 @@
 "use client";
 
-import { Mail } from "lucide-react";
+import type { EmailStatus } from "@repo/shared";
+import { Loader2, Mail } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
 
@@ -11,22 +12,13 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { getClientEmailLogs } from "@/server_actions/emails";
-
-interface EmailLogEntry {
-  id: string;
-  recipientEmail: string;
-  subject: string;
-  status: "SENT" | "FAILED" | "PENDING";
-  sentAt: string | null;
-  createdAt: string;
-}
+import { type ClientEmailLogRow, getClientEmailLogs } from "@/server_actions/emails";
 
 interface ClientEmailHistoryProps {
   clientId: string;
 }
 
-const statusVariant = (status: string) => {
+const statusVariant = (status: EmailStatus) => {
   if (status === "SENT") return "default" as const;
   if (status === "FAILED") return "destructive" as const;
   return "secondary" as const;
@@ -34,16 +26,22 @@ const statusVariant = (status: string) => {
 
 export const ClientEmailHistory = ({ clientId }: ClientEmailHistoryProps) => {
   const t = useTranslations("Admin.debts");
-  const [logs, setLogs] = useState<EmailLogEntry[]>([]);
+  const [logs, setLogs] = useState<ClientEmailLogRow[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (!clientId) {
       setLogs([]);
+      setLoading(false);
       return;
     }
     let cancelled = false;
+    setLoading(true);
     getClientEmailLogs(clientId).then((data) => {
-      if (!cancelled) setLogs(data as EmailLogEntry[]);
+      if (!cancelled) {
+        setLogs(data);
+        setLoading(false);
+      }
     });
     return () => {
       cancelled = true;
@@ -66,7 +64,11 @@ export const ClientEmailHistory = ({ clientId }: ClientEmailHistoryProps) => {
         </CardTitle>
       </CardHeader>
       <CardContent>
-        {logs.length === 0 ? (
+        {loading ? (
+          <div className="flex items-center justify-center py-4">
+            <Loader2 className="size-5 animate-spin text-muted-foreground" />
+          </div>
+        ) : logs.length === 0 ? (
           <p className="text-sm text-muted-foreground">{t("noEmailsSent")}</p>
         ) : (
           <div className="space-y-2">

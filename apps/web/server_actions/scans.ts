@@ -1,6 +1,15 @@
 "use server";
 
-import { createScanQueue, prisma, type ScanJobPayload } from "@repo/shared";
+import {
+  createScanQueue,
+  prisma,
+  type DebtCategory,
+  type ErrorType,
+  type Platform,
+  type Priority,
+  type ScanJobPayload,
+  type ScanStatus,
+} from "@repo/shared";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
@@ -36,22 +45,22 @@ export type ScanRow = {
   clientId: string;
   clientName: string;
   clientAfm: string;
-  status: "QUEUED" | "RUNNING" | "COMPLETED" | "FAILED" | "CANCELLED";
+  status: ScanStatus;
   startedAt: string | null;
   completedAt: string | null;
   totalDebtsFound: number;
   errorMessage: string | null;
-  errorType: string | null;
+  errorType: ErrorType | null;
   platformStatuses: unknown;
   createdAt: string;
 };
 
 export type ScanDebtRow = {
   id: string;
-  category: string;
+  category: DebtCategory;
   amount: number;
-  platform: string;
-  priority: string;
+  platform: Platform;
+  priority: Priority;
   description: string | null;
   dueDate: string | null;
   documentUrl: string | null;
@@ -71,10 +80,10 @@ export type DebtFileRow = {
 
 export type DebtDetailRow = {
   id: string;
-  category: string;
+  category: DebtCategory;
   amount: number;
-  platform: string;
-  priority: string;
+  platform: Platform;
+  priority: Priority;
   description: string | null;
   dueDate: string | null;
   rfCode: string | null;
@@ -84,7 +93,7 @@ export type DebtDetailRow = {
 };
 
 export type PlatformDebtGroup = {
-  platform: string;
+  platform: Platform;
   subtotal: number;
   fileCount: number;
   debts: DebtDetailRow[];
@@ -398,7 +407,7 @@ export const getClientDebtSummary = async (
   });
 
   // Group by platform
-  const platformMap = new Map<string, DebtDetailRow[]>();
+  const platformMap = new Map<Platform, DebtDetailRow[]>();
   for (const d of debts) {
     const rows = platformMap.get(d.platform) ?? [];
     rows.push({

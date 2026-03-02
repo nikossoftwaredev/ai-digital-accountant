@@ -1,6 +1,6 @@
 "use server";
 
-import { encrypt, prisma } from "@repo/shared";
+import { encrypt, prisma, type ClientStatus } from "@repo/shared";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
@@ -41,7 +41,7 @@ export type ClientRow = {
   email: string | null;
   phone: string | null;
   notes: string | null;
-  status: "ACTIVE" | "PENDING" | "ERROR";
+  status: ClientStatus;
   lastScanAt: string | null;
   totalDebts: number;
   createdAt: string;

@@ -1,5 +1,6 @@
 "use client";
 
+import type { Platform } from "@repo/shared";
 import { useTranslations } from "next-intl";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -24,7 +25,7 @@ import { ScanProgressCard } from "./scan-progress-card";
 
 // ── Types ────────────────────────────────────────────────────────
 
-type ScanStatus = "idle" | "scanning" | "completed" | "failed";
+type CardScanStatus = "idle" | "scanning" | "completed" | "failed";
 
 interface DebtsPageClientProps {
   clients: ClientRow[];
@@ -32,12 +33,11 @@ interface DebtsPageClientProps {
   initialClientId?: string;
 }
 
-const ACTIVE_PLATFORMS = ["AADE", "EFKA", "GEMI", "MUNICIPALITY"] as const;
-type ActivePlatform = (typeof ACTIVE_PLATFORMS)[number];
+const ACTIVE_PLATFORMS: readonly Platform[] = ["AADE", "EFKA", "GEMI", "MUNICIPALITY"] as const;
 
 // ── Helpers ──────────────────────────────────────────────────────
 
-const getPlatformFiles = (data: ClientDebtSummaryData | null, platform: string): DebtFileRow[] => {
+const getPlatformFiles = (data: ClientDebtSummaryData | null, platform: Platform): DebtFileRow[] => {
   if (!data) return [];
   const group = data.groups.find((g) => g.platform === platform);
   if (!group) return [];
@@ -49,7 +49,7 @@ const getPlatformFiles = (data: ClientDebtSummaryData | null, platform: string):
   ]);
 };
 
-const getPlatformSubtotal = (data: ClientDebtSummaryData | null, platform: string): number => {
+const getPlatformSubtotal = (data: ClientDebtSummaryData | null, platform: Platform): number => {
   if (!data) return 0;
   const group = data.groups.find((g) => g.platform === platform);
   return group?.subtotal ?? 0;
@@ -65,7 +65,7 @@ export const DebtsPageClient = ({
   const t = useTranslations("Admin.debts");
 
   const [selectedClientId, setSelectedClientId] = useState<string>(initialClientId ?? clients[0]?.id ?? "");
-  const [scanStatuses, setScanStatuses] = useState<Record<ActivePlatform, ScanStatus>>({
+  const [scanStatuses, setScanStatuses] = useState<Record<Platform, CardScanStatus>>({
     AADE: "idle", EFKA: "idle", GEMI: "idle", MUNICIPALITY: "idle",
   });
   const [activeScanId, setActiveScanId] = useState<string | null>(null);
@@ -91,7 +91,7 @@ export const DebtsPageClient = ({
   }, [selectedClientId, summaryRefreshKey]);
 
   const handleScan = useCallback(
-    async (platform: ActivePlatform) => {
+    async (platform: Platform) => {
       if (!selectedClientId) {
         toast.error(t("selectClientFirst"));
         return;
@@ -118,8 +118,8 @@ export const DebtsPageClient = ({
   const handleScanComplete = useCallback(
     (scan: ScanRow) => {
       // Update the correct platform status based on scan results
-      const statuses = scan.platformStatuses as Array<{ platform: string }> | null;
-      const newStatus: ScanStatus = scan.status === "COMPLETED" ? "completed" : "failed";
+      const statuses = scan.platformStatuses as Array<{ platform: Platform }> | null;
+      const newStatus: CardScanStatus = scan.status === "COMPLETED" ? "completed" : "failed";
 
       setScanStatuses((prev) => {
         const next = { ...prev };
@@ -139,7 +139,7 @@ export const DebtsPageClient = ({
   );
 
   const handleSendEmail = useCallback(
-    (platform: string) => {
+    (platform: Platform) => {
       toast.info(`${t("sendEmail")} — ${platform} (coming soon)`);
     },
     [t]
