@@ -6,5 +6,11 @@ export {
   SCAN_QUEUE_NAME,
   getRedisConnectionOptions,
   createScanQueue,
+  LOOKUP_QUEUE_NAME,
+  createLookupQueue,
 } from "./queue";
-export type { ScanJobPayload } from "./queue";
+export type {
+  ScanJobPayload,
+  LookupJobPayload,
+  LookupJobResult,
+} from "./queue";
