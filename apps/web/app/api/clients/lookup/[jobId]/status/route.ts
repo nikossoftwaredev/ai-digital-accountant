@@ -9,6 +9,21 @@ import {
 
 import { authOptions } from "@/lib/auth/auth";
 
+// ── Singleton Queue (HMR-safe via globalThis) ────────────────────
+
+const getLookupQueue = () => {
+  const key = "__lookupQueue" as keyof typeof globalThis;
+  if (!globalThis[key]) {
+    (globalThis as Record<string, unknown>)[key] = new Queue(
+      LOOKUP_QUEUE_NAME,
+      { connection: getRedisConnectionOptions() },
+    );
+  }
+  return globalThis[key] as Queue;
+};
+
+// ── Route handler ────────────────────────────────────────────────
+
 export async function GET(
   _request: Request,
   { params }: { params: Promise<{ jobId: string }> }
@@ -19,36 +34,29 @@ export async function GET(
 
   const { jobId } = await params;
 
-  const queue = new Queue(LOOKUP_QUEUE_NAME, {
-    connection: getRedisConnectionOptions(),
-  });
+  const queue = getLookupQueue();
+  const job = await queue.getJob(jobId);
 
-  try {
-    const job = await queue.getJob(jobId);
+  if (!job)
+    return NextResponse.json({ status: "not_found" }, { status: 404 });
 
-    if (!job)
-      return NextResponse.json({ status: "not_found" }, { status: 404 });
+  // Verify ownership
+  if (job.data.accountantId !== session.user.id)
+    return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
 
-    // Verify ownership
-    if (job.data.accountantId !== session.user.id)
-      return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+  const state = await job.getState();
 
-    const state = await job.getState();
-
-    if (state === "completed") {
-      const result = job.returnvalue as LookupJobResult;
-      return NextResponse.json({ status: "completed", data: result });
-    }
-
-    if (state === "failed") {
-      return NextResponse.json({
-        status: "failed",
-        error: job.failedReason ?? "Unknown error",
-      });
-    }
-
-    return NextResponse.json({ status: "pending" });
-  } finally {
-    await queue.close();
+  if (state === "completed") {
+    const result = job.returnvalue as LookupJobResult;
+    return NextResponse.json({ status: "completed", data: result });
   }
+
+  if (state === "failed") {
+    return NextResponse.json({
+      status: "failed",
+      error: job.failedReason ?? "Unknown error",
+    });
+  }
+
+  return NextResponse.json({ status: "pending" });
 }

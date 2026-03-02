@@ -1,8 +1,21 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { createLookupQueue } from "@repo/shared";
+import type { Queue } from "bullmq";
 
 import { authOptions } from "@/lib/auth/auth";
+
+// ── Singleton Queue (HMR-safe via globalThis) ────────────────────
+
+const getLookupQueue = () => {
+  const key = "__lookupPostQueue" as keyof typeof globalThis;
+  if (!globalThis[key]) {
+    (globalThis as Record<string, unknown>)[key] = createLookupQueue();
+  }
+  return globalThis[key] as Queue;
+};
+
+// ── Route handler ────────────────────────────────────────────────
 
 export async function POST(request: Request) {
   const session = await getServerSession(authOptions);
@@ -19,7 +32,7 @@ export async function POST(request: Request) {
     );
 
   const jobId = crypto.randomUUID();
-  const queue = createLookupQueue();
+  const queue = getLookupQueue();
 
   await queue.add(
     "lookup",
@@ -31,8 +44,6 @@ export async function POST(request: Request) {
     },
     { jobId }
   );
-
-  await queue.close();
 
   return NextResponse.json({ jobId });
 }
