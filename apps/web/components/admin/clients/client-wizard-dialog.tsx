@@ -5,6 +5,7 @@ import {
   ArrowLeft,
   CheckCircle,
   FileText,
+  IdCard,
   KeyRound,
   Loader2,
   Search,
@@ -66,6 +67,7 @@ export const ClientWizardDialog = ({
   const [step, setStep] = useState<WizardStep>("credentials");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [amka, setAmka] = useState("");
   const [lookupStatus, setLookupStatus] = useState<LookupStatus>("idle");
   const [lookupError, setLookupError] = useState("");
   const [autoFetched, setAutoFetched] = useState(false);
@@ -100,6 +102,7 @@ export const ClientWizardDialog = ({
       setStep("credentials");
       setUsername("");
       setPassword("");
+      setAmka("");
       setLookupStatus("idle");
       setLookupError("");
       setAutoFetched(false);
@@ -118,7 +121,7 @@ export const ClientWizardDialog = ({
   }, [open, form]);
 
   const handleLookup = useCallback(async () => {
-    if (!username || !password) return;
+    if (!username || !password || amka.length !== 11) return;
 
     // Clear any existing timers / in-flight requests before starting
     if (pollingRef.current) {
@@ -177,7 +180,7 @@ export const ClientWizardDialog = ({
             form.reset({
               name: `${data.firstName} ${data.lastName}`,
               afm: data.afm,
-              amka: data.amka,
+              amka: data.amka || amka,
               email: "",
               phone: "",
               notes: "",
@@ -222,14 +225,14 @@ export const ClientWizardDialog = ({
       setLookupStatus("failed");
       setLookupError(t("lookupFailed"));
     }
-  }, [username, password, form, t]);
+  }, [username, password, amka, form, t]);
 
   const handleSkip = () => {
     setAutoFetched(false);
     form.reset({
       name: "",
       afm: "",
-      amka: "",
+      amka: amka,
       email: "",
       phone: "",
       notes: "",
@@ -312,6 +315,18 @@ export const ClientWizardDialog = ({
                   className="mt-1"
                 />
               </div>
+              <div>
+                <label className="flex items-center gap-1.5 text-sm font-medium">
+                  <IdCard className="size-3.5" /> {t("amka")}
+                </label>
+                <Input
+                  value={amka}
+                  onChange={(e) => setAmka(e.target.value.replace(/\D/g, "").slice(0, 11))}
+                  disabled={lookupStatus === "loading"}
+                  placeholder="11 ψηφία"
+                  className="mt-1"
+                />
+              </div>
             </div>
 
             {lookupStatus === "loading" && (
@@ -337,7 +352,7 @@ export const ClientWizardDialog = ({
                 type="button"
                 variant="ghost"
                 onClick={handleSkip}
-                disabled={lookupStatus === "loading"}
+                disabled={lookupStatus === "loading" || amka.length !== 11}
                 className="text-muted-foreground"
               >
                 {t("skipLookup")}
@@ -346,7 +361,7 @@ export const ClientWizardDialog = ({
                 type="button"
                 onClick={handleLookup}
                 disabled={
-                  !username || !password || lookupStatus === "loading"
+                  !username || !password || amka.length !== 11 || lookupStatus === "loading"
                 }
               >
                 {lookupStatus === "loading" ? (

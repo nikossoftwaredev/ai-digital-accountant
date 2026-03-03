@@ -8,9 +8,12 @@ export {
   createScanQueue,
   LOOKUP_QUEUE_NAME,
   createLookupQueue,
+  CERTIFICATE_QUEUE_NAME,
+  createCertificateQueue,
 } from "./queue";
 export type {
   ScanJobPayload,
   LookupJobPayload,
   LookupJobResult,
+  CertificateJobPayload,
 } from "./queue";

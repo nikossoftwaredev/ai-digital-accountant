@@ -187,7 +187,17 @@
       "criminalRecordDesc": "Request criminal record certificate via gov.gr",
       "signatureAuthTitle": "Signature Authentication",
       "signatureAuthDesc": "Signature authentication via gov.gr",
-      "comingSoon": "Soon"
+      "comingSoon": "Soon",
+      "scan": "Scan",
+      "cancel": "Cancel",
+      "selectPurpose": "Select purpose",
+      "searchPurpose": "Search...",
+      "noPurposeFound": "No purpose found",
+      "selectClientFirst": "Select a client first",
+      "requestSubmitted": "Request submitted",
+      "requestRunning": "Processing...",
+      "requestCompleted": "Completed",
+      "requestFailed": "Failed"
     },
     "scans": {
       "title": "Scans",

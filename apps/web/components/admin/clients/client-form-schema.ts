@@ -5,7 +5,7 @@ import { z } from "zod";
 export const clientBaseSchema = z.object({
   name: z.string().min(1),
   afm: z.string().regex(/^\d{9}$/),
-  amka: z.string().regex(/^\d{11}$/).optional().or(z.literal("")),
+  amka: z.string().regex(/^\d{11}$/),
   email: z.string().email().optional().or(z.literal("")),
   phone: z.string().optional().or(z.literal("")),
   notes: z.string().optional().or(z.literal("")),

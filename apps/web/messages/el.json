@@ -186,7 +186,17 @@
       "criminalRecordDesc": "Αίτηση αντιγράφου ποινικού μητρώου μέσω gov.gr",
       "signatureAuthTitle": "Γνήσιο Υπογραφής",
       "signatureAuthDesc": "Βεβαίωση γνησίου υπογραφής μέσω gov.gr",
-      "comingSoon": "Σύντομα"
+      "comingSoon": "Σύντομα",
+      "scan": "Σάρωση",
+      "cancel": "Ακύρωση",
+      "selectPurpose": "Επιλέξτε σκοπό",
+      "searchPurpose": "Αναζήτηση...",
+      "noPurposeFound": "Δεν βρέθηκε σκοπός",
+      "selectClientFirst": "Επιλέξτε πρώτα πελάτη",
+      "requestSubmitted": "Το αίτημα υποβλήθηκε",
+      "requestRunning": "Επεξεργασία...",
+      "requestCompleted": "Ολοκληρώθηκε",
+      "requestFailed": "Αποτυχία"
     },
     "scans": {
       "title": "Σαρώσεις",

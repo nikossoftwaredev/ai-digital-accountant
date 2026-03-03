@@ -12,7 +12,7 @@ import { getAccountantId } from "@/lib/auth/session";
 const clientCreateSchema = z.object({
   name: z.string().min(1),
   afm: z.string().regex(/^\d{9}$/),
-  amka: z.string().regex(/^\d{11}$/).optional().or(z.literal("")),
+  amka: z.string().regex(/^\d{11}$/),
   email: z.string().email().optional().or(z.literal("")),
   phone: z.string().optional().or(z.literal("")),
   taxisnetUsername: z.string().min(1),
@@ -23,7 +23,7 @@ const clientCreateSchema = z.object({
 const clientUpdateSchema = z.object({
   name: z.string().min(1),
   afm: z.string().regex(/^\d{9}$/),
-  amka: z.string().regex(/^\d{11}$/).optional().or(z.literal("")),
+  amka: z.string().regex(/^\d{11}$/),
   email: z.string().email().optional().or(z.literal("")),
   phone: z.string().optional().or(z.literal("")),
   taxisnetUsername: z.string().optional().or(z.literal("")),
@@ -239,14 +239,14 @@ export const deleteClient = async (
     return { success: false, error: "Client not found" };
   }
 
-  await prisma.client.delete({ where: { id } });
-
+  // Log audit BEFORE delete — the FK constraint prevents logging after the client is gone
   await logAuditEvent({
     accountantId,
     action: "CLIENT_DELETED",
-    clientId: id,
-    details: { name: existing.name, afm: existing.afm },
+    details: { clientId: id, name: existing.name, afm: existing.afm },
   });
+
+  await prisma.client.delete({ where: { id } });
 
   revalidatePath("/admin/clients");
   return { success: true };

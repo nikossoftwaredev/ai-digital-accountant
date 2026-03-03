@@ -26,7 +26,7 @@ const SCRAPER_MAP: Record<
   MUNICIPALITY: VehicleTaxScraper,
 };
 
-// ── Upload files and create DebtFile records ──────────────────────
+// ── Upload files and create ClientFile records ───────────────────
 
 const uploadAndLinkFiles = async (
   files: ScrapedFile[],
@@ -49,8 +49,9 @@ const uploadAndLinkFiles = async (
       );
 
       // Link file to all debts from this platform's scrape
-      await prisma.debtFile.createMany({
+      await prisma.clientFile.createMany({
         data: debtIds.map((debtId) => ({
+          clientId,
           debtId,
           fileName: uploaded.fileName,
           fileUrl: uploaded.fileUrl,

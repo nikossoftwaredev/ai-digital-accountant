@@ -73,3 +73,26 @@ export const createLookupQueue = () =>
       removeOnFail: { count: 50 },
     },
   });
+
+// ── Certificate Queue ────────────────────────────────────────────
+
+export const CERTIFICATE_QUEUE_NAME = "certificate-jobs";
+
+export interface CertificateJobPayload {
+  requestId: string;
+  clientId: string;
+  accountantId: string;
+  certificateType: string;
+  params: Record<string, unknown>;
+}
+
+export const createCertificateQueue = () =>
+  new Queue<CertificateJobPayload>(CERTIFICATE_QUEUE_NAME, {
+    connection: getRedisConnectionOptions(),
+    defaultJobOptions: {
+      attempts: 2,
+      backoff: { type: "exponential", delay: 5_000 },
+      removeOnComplete: { count: 100 },
+      removeOnFail: { count: 50 },
+    },
+  });

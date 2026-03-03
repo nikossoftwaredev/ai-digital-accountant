@@ -161,7 +161,6 @@ export const DebtsPageClient = ({
         {ACTIVE_PLATFORMS.map((platform) => (
           <DebtServiceCard
             key={platform}
-            platform={platform}
             title={t(`${platform.toLowerCase()}Title`)}
             description={t(`${platform.toLowerCase()}Description`)}
             lastScanDate={selectedClient?.lastScanAt ?? null}

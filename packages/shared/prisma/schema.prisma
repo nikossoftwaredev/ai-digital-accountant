@@ -47,10 +47,11 @@ model Accountant {
   updatedAt DateTime @updatedAt      @map("updated_at")
 
   // Relations
-  clients   Client[]
-  scans     Scan[]
-  emailLogs EmailLog[]
-  auditLogs AuditLog[]
+  clients              Client[]
+  scans                Scan[]
+  certificateRequests  CertificateRequest[]
+  emailLogs            EmailLog[]
+  auditLogs            AuditLog[]
 
   @@map("accountants")
 }
@@ -89,10 +90,12 @@ model Client {
   updatedAt DateTime @updatedAt      @map("updated_at")
 
   // Relations
-  scans     Scan[]
-  debts     Debt[]
-  emailLogs EmailLog[]
-  auditLogs AuditLog[]
+  scans               Scan[]
+  debts               Debt[]
+  certificateRequests CertificateRequest[]
+  files               ClientFile[]
+  emailLogs           EmailLog[]
+  auditLogs           AuditLog[]
 
   @@unique([accountantId, afm])
   @@index([accountantId])
@@ -170,11 +173,11 @@ model Debt {
   priority    Priority     @default(MEDIUM)
   description String?
   dueDate     DateTime?    @map("due_date")
-  documentUrl String?      @map("document_url")  // DEPRECATED: use DebtFile
+  documentUrl String?      @map("document_url")  // DEPRECATED: use ClientFile
   rfCode      String?      @map("rf_code")
   wireCode    String?      @map("wire_code")
 
-  files     DebtFile[]
+  files     ClientFile[]
   createdAt DateTime @default(now()) @map("created_at")
 
   @@index([scanId])
@@ -183,21 +186,29 @@ model Debt {
 }
 
 // ═══════════════════════════════════════════
-// DEBT FILE — attachments for a debt record
+// CLIENT FILE — generic file attachments (debts, certificates, emails)
 // ═══════════════════════════════════════════
-model DebtFile {
-  id       String @id @default(cuid())
-  debtId   String @map("debt_id")
-  debt     Debt   @relation(fields: [debtId], references: [id], onDelete: Cascade)
+model ClientFile {
+  id        String @id @default(cuid())
+  clientId  String @map("client_id")
+  client    Client @relation(fields: [clientId], references: [id], onDelete: Cascade)
 
-  fileName String @map("file_name")
-  fileUrl  String @map("file_url")
-  fileType String @default("application/pdf") @map("file_type")
+  // Optional links to parent entities
+  debtId               String? @map("debt_id")
+  debt                 Debt?   @relation(fields: [debtId], references: [id], onDelete: Cascade)
+  certificateRequestId String? @map("certificate_request_id")
+  certificateRequest   CertificateRequest? @relation(fields: [certificateRequestId], references: [id], onDelete: Cascade)
+
+  fileName  String @map("file_name")
+  fileUrl   String @map("file_url")
+  fileType  String @default("application/pdf") @map("file_type")
 
   createdAt DateTime @default(now()) @map("created_at")
 
+  @@index([clientId])
   @@index([debtId])
-  @@map("debt_files")
+  @@index([certificateRequestId])
+  @@map("client_files")
 }
 
 enum DebtCategory {
@@ -224,6 +235,51 @@ enum Priority {
   HIGH
   MEDIUM
   LOW
+}
+
+// ═══════════════════════════════════════════
+// CERTIFICATE REQUEST — a certificate fetch execution
+// ═══════════════════════════════════════════
+model CertificateRequest {
+  id           String  @id @default(cuid())
+  clientId     String  @map("client_id")
+  client       Client  @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  accountantId String  @map("accountant_id")
+  accountant   Accountant @relation(fields: [accountantId], references: [id])
+
+  certificateType CertificateType @map("certificate_type")
+  status          ScanStatus      @default(QUEUED)
+  params          Json            @default("{}")
+
+  startedAt   DateTime?  @map("started_at")
+  completedAt DateTime?  @map("completed_at")
+  errorMessage String?   @map("error_message")
+  errorType    ErrorType? @map("error_type")
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  files ClientFile[]
+
+  @@index([clientId, createdAt(sort: Desc)])
+  @@index([accountantId, createdAt(sort: Desc)])
+  @@index([status])
+  @@map("certificate_requests")
+}
+
+enum CertificateType {
+  INSURANCE_CLEARANCE
+  TAX_CLEARANCE
+  ENFIA
+  TAX_ASSESSMENT
+  REGISTRY
+  EMPLOYER_BANK
+  EMPLOYER_DYPA
+  EMPLOYER_ENSYPA
+  GEMI
+  SOLEMN_DECLARATION
+  AUTHORIZATION
+  CRIMINAL_RECORD
+  SIGNATURE_AUTH
 }
 
 // ═══════════════════════════════════════════
@@ -289,6 +345,7 @@ enum AuditAction {
   CREDENTIALS_UPDATED
   SCAN_STARTED
   SCAN_COMPLETED
+  CERTIFICATE_REQUESTED
   EMAIL_SENT
   DECRYPT_REQUESTED
   SETTINGS_CHANGED

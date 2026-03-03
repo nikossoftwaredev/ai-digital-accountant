@@ -5,6 +5,40 @@ const EFKA_ENTRY_URL =
   "https://www.idika.org.gr/EfkaServices/Account/GsisOAuth2Authenticate.aspx";
 
 /**
+ * Fill TaxisNet credentials and handle OAuth consent.
+ *
+ * Assumes the page is already on (or redirecting to) the TaxisNet login form.
+ * Fills username + password → clicks Σύνδεση → clicks Αποστολή (consent).
+ *
+ * Reusable across any portal that authenticates via TaxisNet OAuth.
+ */
+export const fillTaxisNetCredentials = async (
+  page: Page,
+  credentials: { username: string; password: string },
+): Promise<void> => {
+  const log = logger.child({ util: "taxisnet-login" });
+
+  // Fill TaxisNet credentials
+  const usernameField = page.getByRole("textbox", { name: "Χρήστης:" });
+  await usernameField.waitFor({ state: "visible", timeout: 15_000 });
+  await usernameField.fill(credentials.username);
+  await page.getByRole("textbox", { name: "Κωδικός:" }).fill(credentials.password);
+  await page.getByRole("button", { name: "Σύνδεση" }).click();
+  log.info("Submitted TaxisNet credentials");
+
+  // OAuth consent — click "Αποστολή"
+  const consentBtn = page.getByRole("button", { name: "Αποστολή" });
+  await consentBtn.waitFor({ state: "visible", timeout: 15_000 });
+  await consentBtn.click();
+  log.info("OAuth consent granted");
+
+  // Wait for redirect to settle
+  await page.waitForLoadState("domcontentloaded");
+  await page.waitForTimeout(2_000);
+  log.info("TaxisNet login complete");
+};
+
+/**
  * Perform the TaxisNet OAuth login flow via the EFKA entry page.
  *
  * Steps: EFKA entry → cookie banner → ΣΥΝΕΧΕΙΑ ΣΤΟ TAXISNET
@@ -36,22 +70,6 @@ export const loginViaTaxisNet = async (
   await page.locator("#ContentPlaceHolder1_btnGGPSAuth").click();
   log.info("Clicked ΣΥΝΕΧΕΙΑ ΣΤΟ TAXISNET");
 
-  // Step 4: Fill TaxisNet credentials
-  const usernameField = page.getByRole("textbox", { name: "Χρήστης:" });
-  await usernameField.waitFor({ state: "visible", timeout: 15_000 });
-  await usernameField.fill(credentials.username);
-  await page.getByRole("textbox", { name: "Κωδικός:" }).fill(credentials.password);
-  await page.getByRole("button", { name: "Σύνδεση" }).click();
-  log.info("Submitted TaxisNet credentials");
-
-  // Step 5: OAuth consent — click "Αποστολή"
-  const consentBtn = page.getByRole("button", { name: "Αποστολή" });
-  await consentBtn.waitFor({ state: "visible", timeout: 15_000 });
-  await consentBtn.click();
-  log.info("OAuth consent granted");
-
-  // Wait for redirect to settle
-  await page.waitForLoadState("domcontentloaded");
-  await page.waitForTimeout(2_000);
-  log.info("TaxisNet login complete");
+  // Step 4-5: Fill credentials + OAuth consent
+  await fillTaxisNetCredentials(page, credentials);
 };

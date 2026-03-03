@@ -12,7 +12,7 @@ import type { DebtFileRow } from "@/server_actions/scans";
 
 interface FilePopoverProps {
   files: DebtFileRow[];
-  /** Legacy documentUrl from Debt model (before DebtFile migration) */
+  /** Legacy documentUrl from Debt model (before ClientFile migration) */
   legacyUrl?: string | null;
 }
 
